@@ -31,6 +31,11 @@
     ! Define-Based options:
     =============================================
 
+    -- Expose all the aliases defined by the 'bee' library (i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...)
+
+    #define BEE_EXPOSE_ALIASES
+
+
     -- If you use fmt-lib, 'bee' will include basic fmt header file(s) and
     expose, basic log methods: bee_info/warn/err/debug("", ...),
     this will also undefine 'BEE_USE_FAKE_FMT'
@@ -647,6 +652,22 @@ template <typename T>
 // ############################################################################
 // #                                                                          #
 // #                                                                          #
+// #                                 ALIASES                                  #
+// #                                                                          #
+// #                                                                          #
+// ############################################################################
+
+#ifdef BEE_EXPOSE_ALIASES
+using namespace bee::TypeAlias_Containers;
+using namespace bee::TypeAlias_Pointers;
+using namespace bee::TypeAlias_Numbers;
+using namespace bee::TypeAlias_GLM;
+#endif
+
+
+// ############################################################################
+// #                                                                          #
+// #                                                                          #
 // #                            IMPLEMENTATION                                #
 // #                                                                          #
 // #                                                                          #
@@ -669,7 +690,10 @@ namespace fs = std::filesystem;
 #ifdef BEE_INCLUDE_ARGPARSE
 CLI &cli_init(Str const &title, Str const &version, Str const &description) {
     static CLI cli { title, version };
-    cli.add_description(description);
+    static auto once = [&description] {
+        cli.add_description(description);
+        return 0;
+    }();
     return cli;
 }
 bool cli_parse(CLI &cli, int argc, char *argv[]) {

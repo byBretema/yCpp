@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import argparse
 
+BUILD_DIR = "build"
 
 def command_exists(cmd:str) -> bool:
     return shutil.which(cmd) is not None
@@ -52,19 +53,19 @@ def main():
     if cmake_gen == "Ninja" and not command_exists("ninja"):
         error_exit("Command 'ninja' is required")
 
-    build_parent_dir = "build"
-    build_dir = f"{build_parent_dir}/sub-build"
+    sub_build_dir = f"{BUILD_DIR}/sub-build"
 
     # Cleanup
-    if args.fullcleanup and os.path.isdir(build_parent_dir):
-        shutil.rmtree(build_parent_dir)
-    if args.cleanup and os.path.isdir(build_dir):
-        shutil.rmtree(build_dir)
-    os.makedirs(build_parent_dir, exist_ok=True)
-    os.makedirs(build_dir, exist_ok=True)
+    if args.fullcleanup and os.path.isdir(BUILD_DIR):
+        shutil.rmtree(BUILD_DIR)
+    os.makedirs(BUILD_DIR, exist_ok=True)
+
+    if args.cleanup and os.path.isdir(sub_build_dir):
+        shutil.rmtree(sub_build_dir)
+    os.makedirs(sub_build_dir, exist_ok=True)
 
     # Change to build directory
-    os.chdir(build_dir)
+    os.chdir(sub_build_dir)
 
     # Deps management :: CMake or Conan
     preset = use_conan(args.useconan, build_type)

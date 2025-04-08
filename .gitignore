@@ -1,6 +1,9 @@
 # .vscode/
+
+.build/
 build/
 subbuild/
+sub-build/
 deps/
 
 CMakeLists.txt.user
