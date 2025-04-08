@@ -16,6 +16,7 @@
 
 5. Run
     ```shell
-    pyhton build.py [-h] [-c] [-C] [-r] [-g CMAKEGEN] [-a]
+    pyhton build.py -c -r
+    # For detailed params : pyhton build.py -h
     ```
 6. Enjoy!  *(if your code properly compiles* :sweat_smile:*)*
