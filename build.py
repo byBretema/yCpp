@@ -15,37 +15,17 @@ def error_exit(message:str) -> None:
     sys.exit(1)
 
 
-def use_conan(enabled:bool, build_type:str) -> str:
-    if not enabled:
-        return ""
-
-    conan_profile = os.path.expanduser("~/.conan2/profiles/default")
-
-    if not os.path.exists(conan_profile):
-        subprocess.run(["uvx", "conan", "profile", "detect"], check=True)
-
-    subprocess.run([
-        "uvx", "conan", "install", "..", f"-s=build_type={build_type}", "--build=missing", "-of=."]
-    , check=True)
-
-    preset = "conan-default" if os.name == "nt" else f"conan-{build_type.lower()}"
-    return preset
-
-
 def main():
     parser = argparse.ArgumentParser(description="Build script")
     parser.add_argument("-c", "--cleanup", action="store_true", help="Cleanup sub-build directory")
     parser.add_argument("-C", "--fullcleanup", action="store_true", help="Cleanup build directory")
     parser.add_argument("-r", "--release", action="store_true", help="Build in Release mode")
     parser.add_argument("-g", "--cmakegen", type=str, default="Ninja", help="CMake generator")
-    parser.add_argument("-a", "--useconan", action="store_true", help="Prefer conan for dependencies")
     args = parser.parse_args()
 
     # Check required commands
     if not command_exists("cmake"):
         error_exit("Command 'cmake' is required")
-    if args.useconan and not command_exists("uvx"):
-        error_exit("Command 'uvx' is required (https://docs.astral.sh/uv/#installation)")
 
     build_type = "Release" if args.release else "Debug"
     cmake_gen = args.cmakegen
@@ -67,17 +47,13 @@ def main():
     # Change to build directory
     os.chdir(sub_build_dir)
 
-    # Deps management :: CMake or Conan
-    preset = use_conan(args.useconan, build_type)
-
     # Config
     config_cmd = ["cmake", "-G", cmake_gen, "../..", f"-DCMAKE_BUILD_TYPE={build_type}"]
-    if preset != "":
-        config_cmd.append(f"--preset={preset}")
     subprocess.run(config_cmd, check=True)
 
     # Build
-    subprocess.run(["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type], check=True)
+    build_cmd = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
+    subprocess.run(build_cmd, check=True)
 
 
 if __name__ == "__main__":
