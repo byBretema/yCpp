@@ -31,11 +31,6 @@
     ! Define-Based options:
     =============================================
 
-    -- Expose all the aliases defined by the 'bee' library (i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...)
-
-    #define BEE_EXPOSE_ALIASES
-
-
     -- If you use fmt-lib, 'bee' will include basic fmt header file(s) and
     expose, basic log methods: bee_info/warn/err/debug("", ...),
     this will also undefine 'BEE_USE_FAKE_FMT'
@@ -592,7 +587,7 @@ using ETimer = ElapsedTimer;
 [[nodiscard]] b8 str_contains(Str const &str, Str const &substr);
 [[nodiscard]] Vec<Str> str_split(Str const &str, Str const &delimeter);
 [[nodiscard]] Str str_join(Vec<Str> const &strlist, Str const &delimeter);
-[[nodiscard]] Str str_replace(Str str, Str const &from, Str const &to, b8 onlyFirstMatch = false);
+[[nodiscard]] Str str_replace(Str str, Str const &from, Str const &to, b8 only_first_match = false);
 [[nodiscard]] Str str_replace_many(Str str, Vec<Str> const &from, Vec<Str> const &to, b8 sorted = false);
 
 [[nodiscard]] Str str_cut(Str const &str, i32 count);
@@ -628,8 +623,8 @@ b8 file_check_extension(Str const &input_file, Str ext);
 // ==============================================
 // ========== Math Utils
 
-[[nodiscard]] f32 map(f32 value, f32 srcMin, f32 srcMax, f32 dstMin, f32 dstMax);
-[[nodiscard]] f32 map_100(f32 value, f32 dstMin, f32 dstMax);
+[[nodiscard]] f32 map(f32 value, f32 src_min, f32 src_max, f32 dst_min, f32 dst_max);
+[[nodiscard]] f32 map_100(f32 value, f32 dst_min, f32 dst_max);
 
 [[nodiscard]] b8 fuzzy_eq(f32 f1, f32 f2, f32 threshold = 0.01f);
 
@@ -647,22 +642,6 @@ template <typename T>
 #endif
 
 } // namespace bee
-
-
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                 ALIASES                                  #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
-
-#ifdef BEE_EXPOSE_ALIASES
-using namespace bee::TypeAlias_Containers;
-using namespace bee::TypeAlias_Pointers;
-using namespace bee::TypeAlias_Numbers;
-using namespace bee::TypeAlias_GLM;
-#endif
 
 
 // ############################################################################
@@ -841,9 +820,9 @@ Str str_trim_r(Str str, Str const &individual_chars_to_remove) {
 
 Vec<u8> bin_read(Str const &path) {
     std::ifstream file { path, std::ios::binary };
-    auto fileBegin = std::istreambuf_iterator<char>(file);
-    auto fileEnd = std::istreambuf_iterator<char>();
-    return { fileBegin, fileEnd };
+    auto file_begin = std::istreambuf_iterator<char>(file);
+    auto file_end = std::istreambuf_iterator<char>();
+    return { file_begin, file_end };
 }
 
 b8 bin_check_magic(SpanConst<u8> bin, SpanConst<u8> magic) {
@@ -923,15 +902,15 @@ b8 file_check_extension(Str const &input_file, Str ext) {
 // ==============================================
 // ========== Math Utils
 
-f32 map(f32 value, f32 srcMin, f32 srcMax, f32 dstMin, f32 dstMax) {
-    return dstMin + (dstMax - dstMin) * (value - srcMin) / (srcMax - srcMin);
+f32 map(f32 value, f32 src_min, f32 src_max, f32 dst_min, f32 dst_max) {
+    return dst_min + (dst_max - dst_min) * (value - src_min) / (src_max - src_min);
 }
-f32 map_100(f32 value, f32 dstMin, f32 dstMax) { return map(value, 0, 100, dstMin, dstMax); }
+f32 map_100(f32 value, f32 dst_min, f32 dst_max) { return map(value, 0, 100, dst_min, dst_max); }
 
 b8 fuzzy_eq(f32 f1, f32 f2, f32 threshold) {
     auto const diff = abs(f1 - f2);
-    auto const isEq = diff <= threshold;
-    return isEq;
+    auto const is_eq = diff <= threshold;
+    return is_eq;
 }
 
 f32 clamp_angle(f32 angle) {
