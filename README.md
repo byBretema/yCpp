@@ -1,4 +1,4 @@
-# cpp-template
+# blank-cpp
 
 > A tiny start point for your next C++ project
 
