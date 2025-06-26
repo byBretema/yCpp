@@ -1,39 +1,19 @@
-#
 # LightPM.cmake - A nano wrapper over FetchContent
 # Lovingly typ(o)ed @byBretema
-#
 # MIT License
-#
-# Original Repository ->  https://github.com/byBretema/LightPM
-#
 
 include(FetchContent)
 
-
 ###############################################################################
-##### Light Package Manager !
+## Vars !
 
-##################################
-#                                #
-#        Output Folder           #
-#                                #
-##################################
-
+# Output Folder
 set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/../deps)
-
-##################################
-#                                #
-#  Global Variable w/ lib names  #
-#                                #
-##################################
-
+# Global Variable w/ lib names
 set(LPM_MetaList "" CACHE INTERNAL "")
 
-##################################
-#                                #
-#         Add package            #
-#                                #
-##################################
+###############################################################################
+## Add package !
 
 function(LPM_AddPkg pkg_name pkg_version pkg_url)
     find_package(${pkg_name} ${pkg_version} QUIET)
@@ -49,11 +29,8 @@ function(LPM_AddPkg pkg_name pkg_version pkg_url)
     set(LPM_MetaList "${clean_list}" CACHE INTERNAL "")
 endfunction()
 
-##################################
-#                                #
-#        Link to project         #
-#                                #
-##################################
+###############################################################################
+## Link to project
 
 function(LPM_Link project)
     string(REPLACE " " ";" local_deps "${LPM_MetaList}")
@@ -61,25 +38,16 @@ function(LPM_Link project)
     target_link_libraries(${project} ${local_deps})
 endfunction()
 
-
 ###############################################################################
-##### How To Use !
+## How To Use !
 
-##################################
-#                                #
-#  On parent (or project) CMake  #
-#                                #
-##################################
+# On parent (or project) CMake
 
 # LPM_AddPkg("fmt" "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip")
 # LPM_AddPkg("glm" "1.0.1" "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip")
 # LPM_AddPkg("argparse" "3.2" "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip")
 
-##################################
-#                                #
-#       On project CMake         #
-#                                #
-##################################
+# On project CMake
 
 # string(REPLACE " " ";" LPM_List "${LPM_MetaList}")
 # target_link_libraries(${PROJECT_NAME} ${LPM_List})

@@ -1,19 +1,22 @@
+# Lovingly typ(o)ed @byBretema
+# MIT License
+
 cmake_minimum_required(VERSION 3.25)
 
 ###############################################################################
-##### Project !
+## Project !
 
 project(${PName})
 
 ###############################################################################
-##### Build Type !
+## Build Type !
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
 ###############################################################################
-##### Output Setup !
+## Output Setup !
 
 if (NOT MSVC)
     set(EXTRA_FOLDER ${CMAKE_BUILD_TYPE})
@@ -25,7 +28,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${EXTRA_FOLDER})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${EXTRA_FOLDER})
 
 ###############################################################################
-##### Target !
+## Target !
 
 # Sources  (Check: https://blog.conan.io/2019/09/02/Deterministic-builds-with-C-C++.html)
 file(GLOB_RECURSE SRCS ${PROJECT_SOURCE_DIR} *.c *.cc *.cpp)

@@ -31,6 +31,12 @@
     ! Define-Based options:
     =============================================
 
+    -- Expose all the aliases defined by the 'bee' library
+    (i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...)
+
+    #define BEE_EXPOSE_ALIASES
+
+
     -- If you use fmt-lib, 'bee' will include basic fmt header file(s) and
     expose, basic log methods: bee_info/warn/err/debug("", ...),
     this will also undefine 'BEE_USE_FAKE_FMT'
@@ -642,6 +648,22 @@ template <typename T>
 #endif
 
 } // namespace bee
+
+
+// ############################################################################
+// #                                                                          #
+// #                                                                          #
+// #                                 ALIASES                                  #
+// #                                                                          #
+// #                                                                          #
+// ############################################################################
+
+#ifdef BEE_EXPOSE_ALIASES
+using namespace bee::TypeAlias_Containers;
+using namespace bee::TypeAlias_Pointers;
+using namespace bee::TypeAlias_Numbers;
+using namespace bee::TypeAlias_GLM;
+#endif
 
 
 // ############################################################################
