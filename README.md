@@ -1,22 +1,35 @@
-# blank-cpp
+# BaseCpp
 
 > A tiny start point for your next C++ project
 
-1. Place your source files in the `src` folder.
+- Batteries included:
+    - Bee - A set of utilities making C++ more comfy.
+    - LightPM - A CMake wrapper to simplify external deps.
 
-2. Modify your dependencies on the top level `CMakeLists.txt`
+- Folders structure:
+    - src
+        - **whatever/**
+        - **you/**
+        - **need/**
+        - CMakeLists.txt
+        - main.cpp *(if executable)*
+    - vendor *(no-project-related-code)*
+    - .clang-format *(please)*
+    - CMakeLists.txt
+    - run.py
 
-3. Or for single-header only add them to `vendor`
-
-4. Install deps:
-    - Python 3.x
-    - [UV](https://docs.astral.sh/uv/#installation)
-    - CMake
-    - Ninja *(optional but recommended)*
-
-5. Run
-    ```shell
-    pyhton build.py -c -r
-    # For detailed params : pyhton build.py -h
-    ```
-6. Enjoy!  *(if your code properly compiles* :sweat_smile:*)*
+- Usage:
+    1. Place your source files in the `src` folder.
+    2. Modify your dependencies on the top level `CMakeLists.txt`
+    3. Other code not related to project add them to `vendor`
+    4. System level deps:
+        - Python 3.x
+        - CMake
+        - Ninja *(optional but recommended)*
+    5. Run
+        ```shell
+        pyhton build.py -c -r
+        # For detailed params : pyhton build.py -h
+        ```
+    6. Enjoy !
+        - *If your code compiles* :sweat_smile:
