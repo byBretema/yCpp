@@ -28,7 +28,7 @@
         - Ninja *(optional but recommended)*
     5. Run
         ```shell
-        pyhton build.py -c -r
+        pyhton run.py -c -r
         # For detailed params : pyhton build.py -h
         ```
     6. Enjoy !

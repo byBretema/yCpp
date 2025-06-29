@@ -63,15 +63,15 @@
 
 
 // ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                INCLUDES                                  #
-// #                                                                          #
-// #                                                                          #
+/* #region Bee-Header */
 // ############################################################################
 
-// ==============================================
-// ========== STD
+
+//=============================================================================
+//= INCLUDES
+//=============================================================================
+
+//--- STD ---------------------------------------------------------------------
 
 #include <chrono>
 #include <cmath>
@@ -97,8 +97,7 @@
 
 #include <iso646.h>
 
-// ==============================================
-// ========== SPAN
+//--- SPAN --------------------------------------------------------------------
 
 #if __cplusplus >= 202002L
 #include <span>
@@ -107,16 +106,14 @@
 #include "tcb_span.hpp"
 #endif
 
-// ==============================================
-// ========== ARGS (argparse)
+//--- ARGs --------------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_ARGPARSE
 //! https://github.com/p-ranav/argparse?tab=readme-ov-file#table-of-contents
 #include <argparse/argparse.hpp>
 #endif
 
-// ==============================================
-// ========== FMT
+//--- FMT ---------------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_FMT
 #include <fmt/chrono.h>
@@ -125,8 +122,7 @@
 #include <fmt/std.h>
 #endif
 
-// ==============================================
-// ========== GLM
+//--- GLM ---------------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_GLM
 // #define GLM_FORCE_SSE
@@ -152,13 +148,9 @@
 #endif
 
 
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                  CONCAT                                  #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
+//=============================================================================
+//= CONCAT
+//=============================================================================
 
 #ifndef BEE_CONCAT
 #define __BEE_CONCAT2(l, r) l##r
@@ -166,17 +158,9 @@
 #define BEE_CONCAT(l, r) __BEE_CONCAT1(l, r)
 #endif
 
-
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                   DEFER                                  #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
-
-// ==============================================
-// ========== By reference
+//=============================================================================
+//= DEFER
+//=============================================================================
 
 #ifndef defer
 #define defer(fn) const auto BEE_CONCAT(defer__, __LINE__) = bee::details::Defer([&]() { fn; })
@@ -184,21 +168,14 @@
 #warning "[bee] :: 'defer' is already defined using it might end in a missbehave"
 #endif
 
-// ==============================================
-// ========== By reference
-
 #ifndef deferc
 #define deferc(fn) const auto BEE_CONCAT(defer__, __LINE__) = bee::details::Defer([=]() { fn; })
 #else
 #warning "[bee] :: 'deferc' is already defined using it might end in a missbehave"
 #endif
 
-// ==============================================
-// ========== Implementation
-
 namespace bee::details {
-
-template <typename T> // Faster compilation than std::funcition : Credits to @javiersalcedopuyo
+template <typename T> // Faster compilation than std::function : Credits to @javiersalcedopuyo
 class Defer {
 public:
     Defer() = delete;
@@ -208,20 +185,14 @@ public:
 private:
     const T fn;
 };
-
 } // namespace bee::details
 
 
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                            FORMAT and PRINT                              #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
+//=============================================================================
+//= FORMAT and PRINT
+//=============================================================================
 
-// ==============================================
-// ========== Fmt lib or not
+//--- FMT Or Fake -------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_FMT //  <-- Using fmtlib
 #undef BEE_USE_FAKE_FMT
@@ -233,13 +204,9 @@ private:
 #define __BEE_LOG_FLAT(msg, ...) fmt::println("{}", bee_fmt(msg, __VA_ARGS__))
 
 #else //  <-- Not using fmtlib (rely on std::cout)
-#warning "[bee] :: Using fmt-lib will improve experience (and performance) of bee_fmt/info/err/.. methods a lot."
 
 #include <iostream>
-
-#ifdef BEE_USE_FAKE_FMT
 #include <regex>
-#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -249,49 +216,54 @@ static const int ___BEE_COUT_SETUP = []() {
 }();
 #endif
 
-namespace bee::detail::format {
+namespace bee::detail {
 
-inline std::string format(std::string msg, std::vector<std::string> const &args) {
-    if (args.size() < 1) {
-        return msg;
-    }
-#ifndef BEE_USE_FAKE_FMT // Append the args at the string's end
-    msg += " | <== ";
-    for (size_t i = 0; i < args.size() - 1; ++i) {
-        msg += "{ " + args[i] + " } : ";
-    }
-    msg += "{ " + args[args.size() - 1] + " }";
-#else                    // Replace the {} in the string
-    static const std::regex pattern("\\{:?.?:?[^\\}^ ]*\\}"); // Trying to capture fmt mini-language
-    auto args_it = args.begin();
+template <typename... Args>
+inline std::vector<std::string> format_getlist(Args &&...args) {
 
-    std::sregex_iterator begin(msg.begin(), msg.end(), pattern);
-    std::sregex_iterator end;
+    std::vector<std::string> str_list;
+    str_list.reserve(sizeof...(args));
 
-    for (auto i = begin; i != end && args_it != args.end(); ++i, ++args_it) {
-        msg.replace(i->position(), i->length(), *args_it);
-        begin = std::sregex_iterator(msg.begin(), msg.end(), pattern); // Reset iterator after modification
-    }
-#endif
-    return msg;
+    static auto oss = []() {
+        std::ostringstream oss;
+        oss << std::boolalpha;
+        return oss;
+    }();
+
+    using fake_loop = int[];
+    (void)fake_loop { 0, (oss.str(""),                      //  Clear prev arg
+                          oss << std::forward<Args>(args),  //  Arg to string
+                          str_list.emplace_back(oss.str()), //  Place arg into the list
+                          0)... };                          //  Just for int return
+
+    return str_list;
 }
 
-inline std::vector<std::string> to_stringlist() { return {}; }
+inline std::string format(std::string const &msg, std::vector<std::string> const &args) {
+    // Trying to capture fmt mini-language
+    static const std::regex pattern(R"(\{:?.?:?[^}^ ]*\})", std::regex_constants::optimize);
 
-template <typename T, typename... Args>
-inline std::vector<std::string> to_stringlist(T &&first, Args &&...args) {
     std::ostringstream oss;
-    oss << std::boolalpha << first;
-    std::vector<std::string> result { oss.str() };
-    std::vector<std::string> rest = to_stringlist(std::forward<Args>(args)...);
-    result.insert(result.end(), rest.begin(), rest.end());
-    return result;
+    oss.str().reserve(msg.size() + args.size() * 8); // Size estimation
+
+    size_t last = 0;
+    auto arg_it = args.begin();
+    std::sregex_iterator it(msg.begin(), msg.end(), pattern), end;
+
+    for (; it != end && arg_it != args.end(); ++it, ++arg_it) {
+        oss.write(&msg[last], it->position() - last);
+        oss << *arg_it;
+        last = it->position() + it->length();
+    }
+
+    oss.write(&msg[last], msg.size() - last);
+    return oss.str();
 }
 
-} // namespace bee::detail::format
+} // namespace bee::detail
 
 // String Builder
-#define bee_fmt(msg, ...) bee::detail::format::format(msg, bee::detail::format::to_stringlist(__VA_ARGS__))
+#define bee_fmt(msg, ...) bee::detail::format(msg, bee::detail::format_getlist(__VA_ARGS__))
 
 // Log Builder
 #define __BEE_LOG(level, msg, ...)                                                                                     \
@@ -299,8 +271,7 @@ inline std::vector<std::string> to_stringlist(T &&first, Args &&...args) {
 #define __BEE_LOG_FLAT(msg, ...) std::cout << bee_fmt(msg, __VA_ARGS__) << "\n"
 #endif
 
-// ==============================================
-// ========== Macros for print and logging
+//--- Actual print API --------------------------------------------------------
 
 #define bee_print(msg, ...) __BEE_LOG_FLAT(msg, __VA_ARGS__)
 #define bee_info(msg, ...) __BEE_LOG("INFO", msg, __VA_ARGS__)
@@ -309,23 +280,17 @@ inline std::vector<std::string> to_stringlist(T &&first, Args &&...args) {
 #define bee_debug(msg, ...) __BEE_LOG("DEBG", msg, __VA_ARGS__)
 
 
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                              OTHER MACROS                                #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
+//=============================================================================
+//= OTHER MACROS
+//=============================================================================
 
-// ==============================================
-// ========== Misc
+//--- Misc --------------------------------------------------------------------
 
 #define bee_bind(fn)                                                                                                   \
     [this](auto &&...args) -> decltype(auto) { return this->fn(std::forward<decltype(args)>(args)...); }
 #define bee_bit(x) (1 << x)
 
-// ==============================================
-// ========== Class helpers
+//--- Class helpers -----------------------------------------------------------
 
 #define bee_nocopy(T)                                                                                                  \
 public:                                                                                                                \
@@ -339,8 +304,7 @@ public:                                                                         
 
 #define bee_nocopy_nomove(T) bee_nocopy(T) bee_nomove(T)
 
-// ==============================================
-// ========== Cast helpers
+//--- Cast helpers ------------------------------------------------------------
 
 #ifndef as
 #define as(T, x) static_cast<T>(x)
@@ -354,35 +318,14 @@ public:                                                                         
 #warning "[bee] :: 'recast' is already defined using it might end in a missbehave"
 #endif
 
-// ==============================================
-// ========== Type helpers
-
-#ifndef let
-#define let auto const
-#else
-#warning "[bee] :: 'let' is already defined using it might end in a missbehave"
-#endif
-
-#ifndef mut
-#define mut auto
-#else
-#warning "[bee] :: 'mut' is already defined using it might end in a missbehave"
-#endif
-
-
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                NAMESPACE                                 #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
+//=============================================================================
+//= NAMESPACE
+//=============================================================================
 
 namespace bee {
 
 
-// ==============================================
-// ========== Numbers Aliases
+//--- Numbers Aliases ---------------------------------------------------------
 
 namespace TypeAlias_Numbers {
 
@@ -437,8 +380,7 @@ inline constexpr f64 f64_epsilon = std::numeric_limits<f64>::epsilon();
 using namespace TypeAlias_Numbers;
 
 
-// ==============================================
-// ========== Pointers Aliases
+//--- Pointers Aliases --------------------------------------------------------
 
 namespace TypeAlias_Pointers {
 
@@ -447,7 +389,8 @@ template <typename T>
 using Uptr = std::unique_ptr<T>;
 template <typename T, typename... Args>
 [[nodiscard]] constexpr Uptr<T> Unew(Args &&...args) {
-    return std::make_unique<T>(std::forward<Args>(args)...);
+    // return std::make_unique<T>(std::forward<Args>(args)...); // C++20 might support this
+    return Uptr<T>(new T { args... }); // Below C++20
 }
 
 // Shared pointer
@@ -455,15 +398,15 @@ template <typename T>
 using Sptr = std::shared_ptr<T>;
 template <typename T, typename... Args>
 [[nodiscard]] constexpr Sptr<T> Snew(Args &&...args) {
-    return std::make_shared<T>(std::forward<Args>(args)...);
+    // return std::make_shared<T>(std::forward<Args>(args)...); // C++20 might support this
+    return Sptr<T>(new T { args... }); // Below C++20
 }
 
 } // namespace TypeAlias_Pointers
 using namespace TypeAlias_Pointers;
 
 
-// ==============================================
-// ========== Containers Aliases
+//--- Containers Aliases --------------------------------------------------------
 
 namespace TypeAlias_Containers {
 
@@ -514,8 +457,7 @@ using SpanConst = std::span<const T>;
 using namespace TypeAlias_Containers;
 
 
-// ==============================================
-// ========== GLM Aliases
+//--- GLM Aliases -------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_GLM
 
@@ -530,8 +472,8 @@ namespace TypeAlias_GLM {} // namespace TypeAlias_GLM
 #endif
 using namespace TypeAlias_GLM;
 
-// ==============================================
-// ========== Time Consts
+
+//--- Time Consts -------------------------------------------------------------
 
 inline constexpr f64 s_to_ms = 1e+3;
 inline constexpr f64 s_to_us = 1e+6;
@@ -550,8 +492,7 @@ inline constexpr f64 ns_to_ms = 1e-6;
 inline constexpr f64 ns_to_us = 1e-3;
 
 
-// ==============================================
-// ========== ARGS (argparse) Wrappers
+//--- Argparse ----------------------------------------------------------------
 
 #ifdef BEE_INCLUDE_ARGPARSE
 using CLI = argparse::ArgumentParser;
@@ -560,8 +501,7 @@ using CLI = argparse::ArgumentParser;
 #endif
 
 
-// ==============================================
-// ========== Elapsed Timer
+//--- Elapsed Timer -------------------------------------------------------------
 
 class ElapsedTimer {
 public:
@@ -583,8 +523,7 @@ private:
 using ETimer = ElapsedTimer;
 
 
-// ==============================================
-// ========== String Utils
+//--- String Utils ------------------------------------------------------------
 
 [[nodiscard]] Str str_lower(Str str);
 [[nodiscard]] Str str_upper(Str str);
@@ -605,15 +544,13 @@ using ETimer = ElapsedTimer;
 [[nodiscard]] Str str_trim_r(Str str, Str const &individual_chars_to_remove = " \n\r\t");
 
 
-// ==============================================
-// ========== Binary Utils
+//--- Binary Utils ------------------------------------------------------------
 
 [[nodiscard]] Vec<u8> bin_read(Str const &path);
 [[nodiscard]] b8 bin_check_magic(SpanConst<u8> bin, SpanConst<u8> magic);
 
 
-// ==============================================
-// ========== Files Utils
+//--- Files Utils -------------------------------------------------------------
 
 [[nodiscard]] Str file_read(Str const &input_file);
 
@@ -626,8 +563,7 @@ b8 file_write_trunc(Str const &output_file, const char *data, usize data_size);
 b8 file_check_extension(Str const &input_file, Str ext);
 
 
-// ==============================================
-// ========== Math Utils
+//--- Math Utils ------------------------------------------------------------
 
 [[nodiscard]] f32 map(f32 value, f32 src_min, f32 src_max, f32 dst_min, f32 dst_max);
 [[nodiscard]] f32 map_100(f32 value, f32 dst_min, f32 dst_max);
@@ -650,13 +586,9 @@ template <typename T>
 } // namespace bee
 
 
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                 ALIASES                                  #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
+//=============================================================================
+//= ALIASES
+//=============================================================================
 
 #ifdef BEE_EXPOSE_ALIASES
 using namespace bee::TypeAlias_Containers;
@@ -667,12 +599,14 @@ using namespace bee::TypeAlias_GLM;
 
 
 // ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                            IMPLEMENTATION                                #
-// #                                                                          #
-// #                                                                          #
+/* #endregion Bee-Header*/
 // ############################################################################
+
+
+// ############################################################################
+/* #region Bee-Implementation */
+// ############################################################################
+
 
 #ifdef BEE_IMPLEMENTATION
 
@@ -685,8 +619,9 @@ namespace bee {
 namespace fs = std::filesystem;
 
 
-// ==============================================
-// ========== ARGS (argparse) Wrappers
+//=============================================================================
+//= Argparse
+//=============================================================================
 
 #ifdef BEE_INCLUDE_ARGPARSE
 CLI &cli_init(Str const &title, Str const &version, Str const &description) {
@@ -710,8 +645,9 @@ bool cli_parse(CLI &cli, int argc, char *argv[]) {
 #endif
 
 
-// ==============================================
-// ========== Elapsed Timer
+//=============================================================================
+//= Elapsed Timer
+//=============================================================================
 
 void ElapsedTimer::reset() {
     m_valid = true;
@@ -728,8 +664,9 @@ i64 ElapsedTimer::elapsed() const {
 }
 
 
-// ==============================================
-// ========== String Utils
+//=============================================================================
+//= String Utils
+//=============================================================================
 
 Str str_lower(Str str) {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);
@@ -837,8 +774,9 @@ Str str_trim_r(Str str, Str const &individual_chars_to_remove) {
 }
 
 
-// ==============================================
-// ========== Binary Utils
+//=============================================================================
+//= Binary Utils
+//=============================================================================
 
 Vec<u8> bin_read(Str const &path) {
     std::ifstream file { path, std::ios::binary };
@@ -862,8 +800,9 @@ b8 bin_check_magic(SpanConst<u8> bin, SpanConst<u8> magic) {
 }
 
 
-// ==============================================
-// ========== Files Utils
+//=============================================================================
+//= Files Utils
+//=============================================================================
 
 Str file_read(Str const &input_file) {
     std::ifstream file(input_file, std::ios::ate | std::ios::binary);
@@ -921,8 +860,9 @@ b8 file_check_extension(Str const &input_file, Str ext) {
 }
 
 
-// ==============================================
-// ========== Math Utils
+//=============================================================================
+//= Math Utils
+//=============================================================================
 
 f32 map(f32 value, f32 src_min, f32 src_max, f32 dst_min, f32 dst_max) {
     return dst_min + (dst_max - dst_min) * (value - src_min) / (src_max - src_min);
@@ -954,3 +894,8 @@ b8 fuzzy_eq(Vec4 const &v1, Vec4 const &v2, f32 t) {
 
 #endif // __BEE_IMPLEMENTATION_GUARD
 #endif // BEE_IMPLEMENTATION
+
+
+// ############################################################################
+/* #endregion Bee-Implementation */
+// ############################################################################
