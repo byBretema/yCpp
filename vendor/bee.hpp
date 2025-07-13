@@ -1,71 +1,50 @@
-#pragma once
-
 /* bee - v0.0.1
 
-    An alternative take on cpp.
-    Basically some aliases and helpers.
+    Basically some aliases and helpers,
+    plus a bunch of code repeated between projects.
 
-    Also a bunch of code that I found myself repeating between projects.
+    Use below define before including bee.hpp:
 
-    No warranty implied, use at your own risk.
+        #define BEE_IMPLEMENTATION
 
-    Original Repository ->  https://github.com/byBretema/bee
+    OPTIONS:
 
-    =============================================
-    ! How to include
-    =============================================
+        -- Expose all the aliases defined by the 'bee' library
+        (i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...)
 
-    -- Classic header-only stuff, add this:
+            #define BEE_EXPOSE_ALIASES
 
-    #define BEE_IMPLEMENTATION
+        -- If you use fmt-lib, 'bee' will include basic fmt header file(s) and
+        expose, basic log methods: bee_info/warn/err/debug("", ...),
+        this will also undefine 'BEE_USE_FAKE_FMT'
 
-    -- Before you include this file in *one* C++ file to create the
-    implementation, something like this:
+            #define BEE_INCLUDE_FMT
 
-    #include ...
-    #include ...
-    #define BEE_IMPLEMENTATION
-    #include "bee.hpp"
+        -- If you use argparse, 'bee' will include argparse header file(s) and
+        expose some wrapper methods under bee::cli_xxx, namespace
 
-    =============================================
-    ! Define-Based options:
-    =============================================
+            #define BEE_INCLUDE_ARGPARSE
 
-    -- Expose all the aliases defined by the 'bee' library
-    (i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...)
+        -- If you use glm-lib, 'bee' will include basic glm header files
 
-    #define BEE_EXPOSE_ALIASES
+            #define BEE_INCLUDE_GLM
 
+        -- To use a simplistic fmt-like custom implementation.
+        It will be disabled if 'BEE_INCLUDE_FMT' is present.
 
-    -- If you use fmt-lib, 'bee' will include basic fmt header file(s) and
-    expose, basic log methods: bee_info/warn/err/debug("", ...),
-    this will also undefine 'BEE_USE_FAKE_FMT'
-
-    #define BEE_INCLUDE_FMT
-
-
-    -- If you use argparse, 'bee' will include argparse header file(s) and
-    expose some wrapper methods under bee::cli_xxx, namespace
-
-    #define BEE_INCLUDE_ARGPARSE
-
-
-    -- If you use glm-lib, 'bee' will include basic glm header files
-
-    #define BEE_INCLUDE_GLM
-
-
-    -- Use a naïve fmt-like custom implemenation (will be disabled if
-    'BEE_INCLUDE_FMT' is present)
-
-    #define BEE_USE_FAKE_FMT
+            #define BEE_USE_FAKE_FMT
 */
 
 
-// ############################################################################
-/* #region Bee-Header */
-// ############################################################################
+// Copyright Daniel Brétema, 2025.
+// Distributed under the Boost Software License, Version 1.0.
+// See complete details at https://www.boost.org/LICENSE_1_0.txt
 
+
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+#ifndef BEE_HEADER
+#define BEE_HEADER
 
 //=============================================================================
 //= INCLUDES
@@ -152,24 +131,26 @@
 //= CONCAT
 //=============================================================================
 
-#ifndef BEE_CONCAT
+#ifndef __BEE_CONCAT
 #define __BEE_CONCAT2(l, r) l##r
 #define __BEE_CONCAT1(l, r) __BEE_CONCAT2(l, r)
-#define BEE_CONCAT(l, r) __BEE_CONCAT1(l, r)
+#define __BEE_CONCAT(l, r) __BEE_CONCAT1(l, r)
 #endif
 
 //=============================================================================
 //= DEFER
 //=============================================================================
 
+#define bee_defer(fn) const auto __BEE_CONCAT(defer__, __LINE__) = bee::details::Defer(fn)
+
 #ifndef defer
-#define defer(fn) const auto BEE_CONCAT(defer__, __LINE__) = bee::details::Defer([&]() { fn; })
+#define defer(fn) bee_defer([&]() { fn; })
 #else
 #warning "[bee] :: 'defer' is already defined using it might end in a missbehave"
 #endif
 
 #ifndef deferc
-#define deferc(fn) const auto BEE_CONCAT(defer__, __LINE__) = bee::details::Defer([=]() { fn; })
+#define deferc(fn) bee_defer([=]() { fn; })
 #else
 #warning "[bee] :: 'deferc' is already defined using it might end in a missbehave"
 #endif
@@ -192,18 +173,20 @@ private:
 //= FORMAT and PRINT
 //=============================================================================
 
-//--- FMT Or Fake -------------------------------------------------------------
-
-#ifdef BEE_INCLUDE_FMT //  <-- Using fmtlib
+#ifdef BEE_INCLUDE_FMT //!! Using fmtlib
 #undef BEE_USE_FAKE_FMT
-// String Builder
+
+//--- String Builder ----------------------------------------------------------
+
 #define bee_fmt(msg, ...) fmt::format(msg, __VA_ARGS__)
-// Log Builder
+
+//--- Log Builder -------------------------------------------------------------
+
 #define __BEE_LOG(level, msg, ...)                                                                                     \
     fmt::println("[{}] | {}:{} | {}", level, __FILE__, __LINE__, bee_fmt(msg, __VA_ARGS__))
 #define __BEE_LOG_FLAT(msg, ...) fmt::println("{}", bee_fmt(msg, __VA_ARGS__))
 
-#else //  <-- Not using fmtlib (rely on std::cout)
+#else //!! Not using fmtlib (rely on std::cout)
 
 #include <iostream>
 #include <regex>
@@ -216,56 +199,38 @@ static const int ___BEE_COUT_SETUP = []() {
 }();
 #endif
 
-namespace bee::detail {
+//--- String Builder ----------------------------------------------------------
 
 template <typename... Args>
-inline std::vector<std::string> format_getlist(Args &&...args) {
+std::string bee_fmt(std::string_view msg, Args... args) {
+    std::ostringstream oss;
+    oss << std::boolalpha;
 
-    std::vector<std::string> str_list;
-    str_list.reserve(sizeof...(args));
+    static auto const fmt = [](std::ostringstream &oss, std::string_view &msg, auto &&arg_value) {
+        size_t const curly_l = msg.find('{');
+        if (curly_l == std::string::npos) {
+            return;
+        }
+        size_t const curly_r = msg.find('}', curly_l + 1);
+        if (curly_r == std::string::npos) {
+            return;
+        }
 
-    static auto oss = []() {
-        std::ostringstream oss;
-        oss << std::boolalpha;
-        return oss;
-    }();
+        oss << msg.substr(0, curly_l);
+        oss << std::forward<decltype(arg_value)>(arg_value);
+
+        msg = msg.substr(curly_r + 1);
+    };
 
     using fake_loop = int[];
-    (void)fake_loop { 0, (oss.str(""),                      //  Clear prev arg
-                          oss << std::forward<Args>(args),  //  Arg to string
-                          str_list.emplace_back(oss.str()), //  Place arg into the list
-                          0)... };                          //  Just for int return
+    (void)fake_loop { 0, (fmt(oss, msg, std::forward<Args>(args)), 0)... };
 
-    return str_list;
-}
-
-inline std::string format(std::string const &msg, std::vector<std::string> const &args) {
-    // Trying to capture fmt mini-language
-    static const std::regex pattern(R"(\{:?.?:?[^}^ ]*\})", std::regex_constants::optimize);
-
-    std::ostringstream oss;
-    oss.str().reserve(msg.size() + args.size() * 8); // Size estimation
-
-    size_t last = 0;
-    auto arg_it = args.begin();
-    std::sregex_iterator it(msg.begin(), msg.end(), pattern), end;
-
-    for (; it != end && arg_it != args.end(); ++it, ++arg_it) {
-        oss.write(&msg[last], it->position() - last);
-        oss << *arg_it;
-        last = it->position() + it->length();
-    }
-
-    oss.write(&msg[last], msg.size() - last);
+    oss << msg;
     return oss.str();
 }
 
-} // namespace bee::detail
+//--- Log Builder -------------------------------------------------------------
 
-// String Builder
-#define bee_fmt(msg, ...) bee::detail::format(msg, bee::detail::format_getlist(__VA_ARGS__))
-
-// Log Builder
 #define __BEE_LOG(level, msg, ...)                                                                                     \
     std::cout << "[" << level << "] | " << __FILE__ << ":" << __LINE__ << " | " << bee_fmt(msg, __VA_ARGS__) << "\n"
 #define __BEE_LOG_FLAT(msg, ...) std::cout << bee_fmt(msg, __VA_ARGS__) << "\n"
@@ -307,16 +272,11 @@ public:                                                                         
 //--- Cast helpers ------------------------------------------------------------
 
 #ifndef as
-#define as(T, x) static_cast<T>(x)
+#define as(T, x) ((T)(x))
 #else
 #warning "[bee] :: 'as' is already defined using it might end in a missbehave"
 #endif
 
-#ifndef recast
-#define recast(T, x) ((T)(x))
-#else
-#warning "[bee] :: 'recast' is already defined using it might end in a missbehave"
-#endif
 
 //=============================================================================
 //= NAMESPACE
@@ -327,17 +287,21 @@ namespace bee {
 
 //--- Numbers Aliases ---------------------------------------------------------
 
+
 namespace TypeAlias_Numbers {
 
 // Bool
+
 using b8 = bool;
 
 // Unsigned
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = size_t;
+
 inline constexpr u8 u8_min = std::numeric_limits<u8>::min();
 inline constexpr u8 u8_max = std::numeric_limits<u8>::max();
 inline constexpr u16 u16_min = std::numeric_limits<u16>::min();
@@ -350,11 +314,13 @@ inline constexpr usize usize_min = std::numeric_limits<usize>::min();
 inline constexpr usize usize_max = std::numeric_limits<usize>::max();
 
 // Signed
+
 using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 using isize = ptrdiff_t;
+
 inline constexpr i8 i8_min = std::numeric_limits<i8>::min();
 inline constexpr i8 i8_max = std::numeric_limits<i8>::max();
 inline constexpr i16 i16_min = std::numeric_limits<i16>::min();
@@ -367,11 +333,13 @@ inline constexpr isize isize_min = std::numeric_limits<isize>::min();
 inline constexpr isize isize_max = std::numeric_limits<isize>::max();
 
 // Floating point
+
 using f32 = float;
-using f64 = double;
 inline constexpr f32 f32_min = std::numeric_limits<f32>::min();
 inline constexpr f32 f32_max = std::numeric_limits<f32>::max();
 inline constexpr f32 f32_epsilon = std::numeric_limits<f32>::epsilon();
+
+using f64 = double;
 inline constexpr f64 f64_min = std::numeric_limits<f64>::min();
 inline constexpr f64 f64_max = std::numeric_limits<f64>::max();
 inline constexpr f64 f64_epsilon = std::numeric_limits<f64>::epsilon();
@@ -389,8 +357,8 @@ template <typename T>
 using Uptr = std::unique_ptr<T>;
 template <typename T, typename... Args>
 [[nodiscard]] constexpr Uptr<T> Unew(Args &&...args) {
-    // return std::make_unique<T>(std::forward<Args>(args)...); // C++20 might support this
-    return Uptr<T>(new T { args... }); // Below C++20
+    // return std::make_unique<T>(std::forward<Args>(args)...); // > C++20
+    return Uptr<T>(new T { args... }); // < C++20
 }
 
 // Shared pointer
@@ -398,8 +366,8 @@ template <typename T>
 using Sptr = std::shared_ptr<T>;
 template <typename T, typename... Args>
 [[nodiscard]] constexpr Sptr<T> Snew(Args &&...args) {
-    // return std::make_shared<T>(std::forward<Args>(args)...); // C++20 might support this
-    return Sptr<T>(new T { args... }); // Below C++20
+    // return std::make_shared<T>(std::forward<Args>(args)...); // > C++20
+    return Sptr<T>(new T { args... }); // < C++20
 }
 
 } // namespace TypeAlias_Pointers
@@ -471,7 +439,6 @@ using Mat4 = glm::mat4;
 namespace TypeAlias_GLM {} // namespace TypeAlias_GLM
 #endif
 using namespace TypeAlias_GLM;
-
 
 //--- Time Consts -------------------------------------------------------------
 
@@ -578,7 +545,7 @@ b8 file_check_extension(Str const &input_file, Str ext);
 [[nodiscard]] b8 fuzzy_eq(Vec4 const &v1, Vec4 const &v2, f32 t = 0.01f);
 
 template <typename T>
-[[nodiscard]] inline b8 is_aligned(T const &a, T const &b, f32 margin = 0.f) {
+[[nodiscard]] inline b8 is_aligned(T const &a, T const &b, f32 margin = 0.01f) {
     return abs(glm::dot(glm::normalize(a), glm::normalize(b))) >= (1.f - f32_epsilon - margin);
 }
 #endif
@@ -597,16 +564,9 @@ using namespace bee::TypeAlias_Numbers;
 using namespace bee::TypeAlias_GLM;
 #endif
 
+#endif // BEE_HEADER
 
-// ############################################################################
-/* #endregion Bee-Header*/
-// ############################################################################
-
-
-// ############################################################################
-/* #region Bee-Implementation */
-// ############################################################################
-
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 #ifdef BEE_IMPLEMENTATION
 
@@ -624,6 +584,7 @@ namespace fs = std::filesystem;
 //=============================================================================
 
 #ifdef BEE_INCLUDE_ARGPARSE
+
 CLI &cli_init(Str const &title, Str const &version, Str const &description) {
     static CLI cli { title, version };
     static auto once = [&description] {
@@ -632,6 +593,7 @@ CLI &cli_init(Str const &title, Str const &version, Str const &description) {
     }();
     return cli;
 }
+
 bool cli_parse(CLI &cli, int argc, char *argv[]) {
     try {
         cli.parse_args(argc, argv);
@@ -642,6 +604,7 @@ bool cli_parse(CLI &cli, int argc, char *argv[]) {
         return false;
     }
 }
+
 #endif
 
 
@@ -895,7 +858,4 @@ b8 fuzzy_eq(Vec4 const &v1, Vec4 const &v2, f32 t) {
 #endif // __BEE_IMPLEMENTATION_GUARD
 #endif // BEE_IMPLEMENTATION
 
-
-// ############################################################################
-/* #endregion Bee-Implementation */
-// ############################################################################
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx

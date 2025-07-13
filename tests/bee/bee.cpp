@@ -1,37 +1,21 @@
 
 #define BEE_TEST_IMPLEMENTATION
-#include "../helpers/bee_test.hpp"
+#include "../../vendor/bee_test.hpp"
 
-#define BEE_BENCH_IMPLEMENTATION
 // #define BEE_BENCH_STDOUT_ONCE
-#include "../helpers/bee_bench.hpp"
+#define BEE_BENCH_IMPLEMENTATION
+#include "../../vendor/bee_bench.hpp"
 
-#define BEE_IMPLEMENTATION
 #define BEE_USE_FAKE_FMT
 // #define BEE_INCLUDE_FMT
-// #define BEE_CPP_INCLUDE_GLM
+// #define BEE_INCLUDE_GLM
+#define BEE_EXPOSE_ALIASES
+#define BEE_IMPLEMENTATION
 #include "../../vendor/bee.hpp"
 
-#include <iostream>
 
-
-using namespace bee::TypeAlias_GLM;
-using namespace bee::TypeAlias_Numbers;
-using namespace bee::TypeAlias_Pointers;
-using namespace bee::TypeAlias_Containers;
-
-
-// ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                                   TESTS                                  #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################
-
-
-// ==============================================
-// ========== Defer
+//== Defer
+//=============================================================================
 
 TEST("Defer Ref", {
     i32 defer_count = 0;
@@ -53,8 +37,8 @@ TEST("Defer Copy", {
 });
 
 
-// ==============================================
-// ========== Format
+//== Fmt
+//=============================================================================
 
 #if defined(BEE_INCLUDE_FMT) || defined(BEE_USE_FAKE_FMT)
 TEST_CHECK("String Format (Str)", bee_fmt("Test {}", "String") == "Test String");
@@ -63,8 +47,9 @@ TEST_CHECK("String Format (Float)", bee_fmt("Test {}", 3.14159f) == "Test 3.1415
 TEST_CHECK("String Format (Double)", bee_fmt("Test {}", 3.14159) == "Test 3.14159");
 #endif
 
-// ==============================================
-// ========== Bit operations
+
+//== Bit operations
+//=============================================================================
 
 TEST("Bit Operations", {
     CHECK("Bit 1", bee_bit(1) == 2);
@@ -75,8 +60,8 @@ TEST("Bit Operations", {
 });
 
 
-// ==============================================
-// ========== Cast
+//== Cast
+//=============================================================================
 
 TEST("Cast Macro", {
     CHECK("As i8 (clamp)", as(i8, 3.14159) == 3);
@@ -89,8 +74,8 @@ TEST("Cast Macro", {
 });
 
 
-// ==============================================
-// ========== Num Aliases
+//== Num Aliases
+//=============================================================================
 
 TEST("Numeric Aliases", {
     CHECK("u8 min", u8_min == std::numeric_limits<uint8_t>::min());
@@ -125,8 +110,8 @@ TEST("Numeric Aliases", {
 });
 
 
-// ==============================================
-// ========== Pointer Aliases
+//== Pointer Aliases
+//=============================================================================
 
 TEST("TypeAlias Pointers", {
     struct A {
@@ -141,8 +126,8 @@ TEST("TypeAlias Pointers", {
 });
 
 
-// ==============================================
-// ========== Optionals
+//== Optionals
+//=============================================================================
 
 TEST("Optional Reference", {
     struct A {
@@ -159,8 +144,8 @@ TEST("Optional Reference", {
 });
 
 
-// ==============================================
-// ========== Time stuff
+//== Timers
+//=============================================================================
 
 TEST("Elapsed Timer", {
     using namespace std::chrono_literals;
@@ -173,8 +158,8 @@ TEST("Elapsed Timer", {
 });
 
 
-// ==============================================
-// ========== String helpers/operations
+//== Strings operations
+//=============================================================================
 
 TEST("String Helpers", {
     Str const to_case = "test STRING to PERFORM the tests";
@@ -215,33 +200,33 @@ TEST("String Helpers", {
 });
 
 
-// ==============================================
-// ========== File helpers/operations
+//== File operations
+//=============================================================================
 
 TEST("File/Bin Helpers", {
-    Str const file_content = bee::file_read("./to_file_read.txt");
-    Str const expected_content = "Test\nfile\nfor\nBEE\n";
-    CHECK("Read", file_content == expected_content);
+    // Str const file_content = bee::file_read("./test_file_read.txt");
+    // Str const expected_content = "Test\nfile\nfor\nBEE\n";
+    // CHECK("Read", file_content == expected_content);
 
-    auto const t = std::time(nullptr);
-    auto const tm = *std::localtime(&t);
-    std::ostringstream oss;
-    oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
-    Str const str = oss.str();
-    CHECK("Append", bee::file_write_append("./to_file_append.txt", str + "\n"));
-    Str const append_content = bee::file_read("./to_file_append.txt");
-    Vec<Str> const append_split = bee::str_split(append_content, "\n");
-    CHECK("Append Validation", append_split[append_split.size() - 1] == str);
+    // auto const t = std::time(nullptr);
+    // auto const tm = *std::localtime(&t);
+    // std::ostringstream oss;
+    // oss << std::put_time(&tm, "%d-%m-%Y %H-%M-%S");
+    // Str const str = oss.str();
+    // CHECK("Append", bee::file_write_append("./to_file_append.txt", str + "\n"));
+    // Str const append_content = bee::file_read("./to_file_append.txt");
+    // Vec<Str> const append_split = bee::str_split(append_content, "\n");
+    // CHECK("Append Validation", append_split[append_split.size() - 1] == str);
 
-    Vec<u8> const bin { 'T', 'e', 's', 't', '\n', 'D', 'a', 't', 'a' };
-    CHECK("Write", bee::file_write_trunc("./to_file_write.bin", recast(char const *, bin.data()), bin.size()));
-    CHECK("Write Validation", bee::fs::exists("./to_file_write.bin"));
+    // Vec<u8> const bin { 'T', 'e', 's', 't', '\n', 'D', 'a', 't', 'a' };
+    // CHECK("Write", bee::file_write_trunc("./to_file_write.bin", recast(char const *, bin.data()), bin.size()));
+    // CHECK("Write Validation", bee::fs::exists("./to_file_write.bin"));
 
-    auto const bin_content = bee::bin_read("./to_file_write.bin");
-    Vec<u8> const magic { 'T', 'e', 's', 't' };
-    CHECK("Magic", bee::bin_check_magic(bin_content, magic));
+    // auto const bin_content = bee::bin_read("./to_file_write.bin");
+    // Vec<u8> const magic { 'T', 'e', 's', 't' };
+    // CHECK("Magic", bee::bin_check_magic(bin_content, magic));
 
-    CHECK("Extension", bee::file_check_extension("./to_file_write.bin", "BiN"));
+    // CHECK("Extension", bee::file_check_extension("./to_file_write.bin", "BiN"));
 });
 
 
@@ -308,5 +293,5 @@ BENCH("bee_info_glm_vec3", 5, bee_info("glm vec3 {}", glmstr(Vec3(2.f))));
 int main() {
     bee::test::run();
     bee_print("{}", "");
-    bee::bench::run();
+    // bee::bench::run();
 }

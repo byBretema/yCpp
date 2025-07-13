@@ -1,5 +1,6 @@
-# Lovingly typ(o)ed @byBretema
-# MIT License
+# Copyright Daniel Brétema, 2025.
+# Distributed under the Boost Software License, Version 1.0.
+# See complete details at https://www.boost.org/LICENSE_1_0.txt
 
 cmake_minimum_required(VERSION 3.28)
 include(vendor/LightPM.cmake)
@@ -29,3 +30,4 @@ LPM_AddPkg( "argparse"  "3.2"     "https://github.com/p-ranav/argparse/archive/r
 
 include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/vendor)
 add_subdirectory(src)
+add_subdirectory(tests)

@@ -1,3 +1,7 @@
+# Copyright Daniel Brétema, 2025.
+# Distributed under the Boost Software License, Version 1.0.
+# See complete details at https://www.boost.org/LICENSE_1_0.txt
+
 import os
 import sys
 import shutil
@@ -5,6 +9,7 @@ import subprocess
 import argparse
 
 BUILD_DIR = "build"
+
 
 def command_exists(cmd:str) -> bool:
     return shutil.which(cmd) is not None
@@ -21,6 +26,7 @@ def main():
     parser.add_argument("-C", "--fullcleanup", action="store_true", help="Cleanup build directory")
     parser.add_argument("-r", "--release", action="store_true", help="Build in Release mode")
     parser.add_argument("-g", "--cmakegen", type=str, default="Ninja", help="CMake generator")
+    # parser.add_argument("-t", "--test", action="store_true", help="Compile and run tests")
     args = parser.parse_args()
 
     # Check required commands

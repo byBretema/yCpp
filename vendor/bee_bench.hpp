@@ -32,13 +32,11 @@
 
     #define BEE_BENCH_STDOUT_ONCE
 
-    -- By default we redirect the output of the benchmarked code during its execution
-    so you don't see the same log hundreds or thousands of times, you can avoid that behaviour
-    using below flag before including this file. (Do you really want that?)
-
-    #define BEE_BENCH_STDOUT_ENABLE
-
 */
+
+// Copyright Daniel Brétema, 2025.
+// Distributed under the Boost Software License, Version 1.0.
+// See complete details at https://www.boost.org/LICENSE_1_0.txt
 
 
 // ############################################################################
@@ -86,13 +84,6 @@ void run();
 // #                                                                          #
 // #                                  CONCAT                                  #
 // #                                                                          #
-// #           // ############################################################################
-// #                                                                          #
-// #                                                                          #
-// #                            IMPLEMENTATION                                #
-// #                                                                          #
-// #                                                                          #
-// ############################################################################ #
 // ############################################################################
 
 #ifndef BEE_CONCAT
@@ -201,9 +192,7 @@ void run() {
 
     for (auto const &[name, times, fn, file, line] : detail::g_benchmarks) {
 
-#ifndef BEE_BENCH_STDOUT_ENABLE
         detail::stdout_off();
-#endif
 
         uint32_t i = 0;
         start = std::chrono::high_resolution_clock::now();
@@ -212,9 +201,7 @@ void run() {
         }
         end = std::chrono::high_resolution_clock::now();
 
-#ifndef BEE_BENCH_STDOUT_ENABLE
         detail::stdout_on();
-#endif
 
         using ns = std::chrono::nanoseconds;
         auto const elapsed = std::chrono::duration_cast<ns>(end - start).count();
