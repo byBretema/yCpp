@@ -1,6 +1,3 @@
-# Lovingly typ(o)ed @byBretema
-# MIT License
-
 cmake_minimum_required(VERSION 3.25)
 
 ###############################################################################
@@ -19,13 +16,13 @@ endif()
 ## Output Setup !
 
 if (NOT MSVC)
-    set(EXTRA_FOLDER ${CMAKE_BUILD_TYPE})
+    set(BUILD_TYPE_FOLDER ${CMAKE_BUILD_TYPE})
 else()
-    set(EXTRA_FOLDER "")
+    set(BUILD_TYPE_FOLDER "")
 endif()
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${EXTRA_FOLDER})
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${EXTRA_FOLDER})
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${EXTRA_FOLDER})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${BUILD_TYPE_FOLDER})
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${BUILD_TYPE_FOLDER})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/../bin/${BUILD_TYPE_FOLDER})
 
 ###############################################################################
 ## Target !
@@ -48,4 +45,4 @@ set_target_properties(${PROJECT_NAME}
 target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
 # Dependencies
-LPM_Link(${PROJECT_NAME})
+yLink(${PROJECT_NAME})

@@ -1,7 +1,3 @@
-# Copyright Daniel Brétema, 2025.
-# Distributed under the Boost Software License, Version 1.0.
-# See complete details at https://www.boost.org/LICENSE_1_0.txt
-
 import os
 import sys
 import shutil
@@ -11,22 +7,29 @@ import argparse
 BUILD_DIR = "build"
 
 
-def command_exists(cmd:str) -> bool:
+def command_exists(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
-def error_exit(message:str) -> None:
+def error_exit(message: str) -> None:
     print(f"[ERR] - {message}", file=sys.stderr)
     sys.exit(1)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Build script")
-    parser.add_argument("-c", "--cleanup", action="store_true", help="Cleanup sub-build directory")
-    parser.add_argument("-C", "--fullcleanup", action="store_true", help="Cleanup build directory")
-    parser.add_argument("-r", "--release", action="store_true", help="Build in Release mode")
-    parser.add_argument("-g", "--cmakegen", type=str, default="Ninja", help="CMake generator")
-    # parser.add_argument("-t", "--test", action="store_true", help="Compile and run tests")
+    parser.add_argument(
+        "-c", "--cleanup", action="store_true", help="Cleanup sub-build directory"
+    )
+    parser.add_argument(
+        "-C", "--fullcleanup", action="store_true", help="Cleanup build directory"
+    )
+    parser.add_argument(
+        "-r", "--release", action="store_true", help="Build in Release mode"
+    )
+    parser.add_argument(
+        "-g", "--cmakegen", type=str, default="Ninja", help="CMake generator"
+    )
     args = parser.parse_args()
 
     # Check required commands
@@ -39,7 +42,7 @@ def main():
     if cmake_gen == "Ninja" and not command_exists("ninja"):
         error_exit("Command 'ninja' is required")
 
-    sub_build_dir = f"{BUILD_DIR}/sub-build"
+    sub_build_dir = f"{BUILD_DIR}/project"
 
     # Cleanup
     if args.fullcleanup and os.path.isdir(BUILD_DIR):
@@ -58,7 +61,15 @@ def main():
     subprocess.run(config_cmd, check=True)
 
     # Build
-    build_cmd = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
+    build_cmd = [
+        "cmake",
+        "--build",
+        ".",
+        "-j",
+        str(os.cpu_count()),
+        "--config",
+        build_type,
+    ]
     subprocess.run(build_cmd, check=True)
 
 

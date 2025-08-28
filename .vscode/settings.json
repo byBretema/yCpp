@@ -9,9 +9,23 @@
         "xlocmon": "cpp",
         "xlocnum": "cpp",
         "xloctime": "cpp",
-        "limits": "cpp"
+        "concepts": "cpp",
+        "atomic": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "complex": "cpp",
+        "random": "cpp",
+        "fstream": "cpp",
+        "functional": "cpp",
+        "optional": "cpp",
+        "ranges": "cpp",
+        "regex": "cpp",
+        "tuple": "cpp",
+        "valarray": "cpp",
+        "variant": "cpp",
+        "*.txx": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "editor.formatOnSave": true,
-    "editor.formatOnPaste": true
+    "files.trimTrailingWhitespace": true,
 }
