@@ -28,10 +28,17 @@
     #define yyEnable_Benchmarking
         Include a class to easily run Benchmarks.
 
+    #define yyDisable_LogFileAndLine
+        Hide file and line on y_info/warn...
+
+    #define yyEnable_PrintFileAndLine
+        Include file and line info also on y_print not only on y_info/warn...
+
     Used conventions:
     - camelCase  : Defines            : Prefix 'yy'
     - snake_case : Macros             : Prefix 'y_'
     - PascalCase : Types + Namespaces : Inside 'y' namespace
+    - PascalCase : Concepts           : Inside 'y' namespace. Prefix 'T_'
     - snake_case : Vars  + Funcs      : Inside 'y' namespace
     - m_ prefix  : Private vars
     - s_ prefix  : Static  vars
@@ -120,91 +127,12 @@
 #define glmstr(x) glm::to_string(x)
 #endif
 
-//==============================================================================
-//= FORMAT and PRINT
-//==============================================================================
-
-#ifdef yyLib_Fmt //!! Using fmtlib
-#undef yyCustom_Fmt
-
-//--- String Builder -----------------------------------------------------------
-
-#define y_fmt(msg, ...) fmt::format((msg), ##__VA_ARGS__)
-
-//--- Log Builder --------------------------------------------------------------
-
-#define y_log(level, msg, ...)                                                                     \
-    fmt::println("[{}] | {}:{} | {}", (level), __FILE__, __LINE__, y_fmt((msg), ##__VA_ARGS__))
-
-#define y_println(msg, ...) fmt::println("{}", y_fmt((msg), ##__VA_ARGS__))
-#define y_print(msg, ...) fmt::print("{}", y_fmt((msg), ##__VA_ARGS__))
-
-#else //!! Not using fmtlib (rely on std::cout)
-
-#include <iostream>
-#include <regex>
-
-#ifdef _WIN32
-#include <windows.h>
-static const int __yWinCoutSetup = []() {
-    SetConsoleOutputCP(CP_UTF8);
-    return 0;
-}();
-#endif
-
-//--- String Builder -----------------------------------------------------------
-
-template <typename... Args>
-std::string y_fmt(std::string_view msg, Args... args) {
-    std::ostringstream oss;
-    oss << std::boolalpha;
-
-    static auto const fmt = [](std::ostringstream &oss, std::string_view &msg, auto &&arg) {
-        size_t const curly_l = msg.find('{');
-        if (curly_l == std::string::npos) {
-            return;
-        }
-        size_t const curly_r = msg.find('}', curly_l + 1);
-        if (curly_r == std::string::npos) {
-            return;
-        }
-
-        oss << msg.substr(0, curly_l);
-        // oss << std::forward<decltype(arg)>(arg);
-        oss << arg;
-
-        msg = msg.substr(curly_r + 1);
-    };
-
-    using fake_loop = int[];
-    (void)fake_loop { 0, (fmt(oss, msg, std::forward<Args>(args)), 0)... };
-
-    oss << msg;
-    return oss.str();
-}
-
-//--- Log Builder --------------------------------------------------------------
-
-#define y_log(level, msg, ...)                                                                     \
-    std::cout << "[" << (level) << "] | " << __FILE__ << ":" << __LINE__ << " | "                  \
-              << y_fmt((msg), ##__VA_ARGS__) << "\n"
-
-#define y_println(msg, ...) std::cout << y_fmt((msg), ##__VA_ARGS__) << "\n"
-#define y_print(msg, ...) std::cout << y_fmt((msg), ##__VA_ARGS__)
-
-#endif
-
-//--- Actual print API ---------------------------------------------------------
-
-#define y_info(msg, ...) y_log("INFO", (msg), ##__VA_ARGS__)
-#define y_warn(msg, ...) y_log("WARN", (msg), ##__VA_ARGS__)
-#define y_err(msg, ...) y_log("ERRO", (msg), ##__VA_ARGS__)
-#define y_debug(msg, ...) y_log("DEBG", (msg), ##__VA_ARGS__)
-
 
 //==============================================================================
 //= QoL MACROS
 //==============================================================================
+
+#if 1 // QoL Macros
 
 //--- Flow ---------------------------------------------------------------------
 
@@ -254,199 +182,378 @@ public:                                                                         
 #define y_defer(x) y::Defer _y_concat(y_defer_r_, __LINE__) { [&] { x; } };
 #define y_deferc(x) y::Defer _y_concat(y_defer_c_, __LINE__) { [=] { x; } };
 
+#endif
+
 
 //==============================================================================
-//= NAMESPACE
+//= NAMESPACE : Aliases
 //==============================================================================
 
 namespace y {
+
+////////////////////////////////////////////////////////////////////////////////
+//                               ALIASes                                      //
+////////////////////////////////////////////////////////////////////////////////
+
 namespace fs = std::filesystem;
 
+
 ////////////////////////////////////////////////////////////////////////////////
-//                               ALIASES                                      //
+//                               NUMBERs                                      //
 ////////////////////////////////////////////////////////////////////////////////
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-namespace AliasNum {
+namespace Alias_Num {
 
 // Bool
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using b8 = bool;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Unsigned
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using u8 = uint8_t;
 using u16 = uint16_t;
 using u32 = uint32_t;
 using u64 = uint64_t;
 using usize = size_t;
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr u8 u8_min = std::numeric_limits<u8>::min();
 inline constexpr u8 u8_max = std::numeric_limits<u8>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr u16 u16_min = std::numeric_limits<u16>::min();
 inline constexpr u16 u16_max = std::numeric_limits<u16>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr u32 u32_min = std::numeric_limits<u32>::min();
 inline constexpr u32 u32_max = std::numeric_limits<u32>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr u64 u64_min = std::numeric_limits<u64>::min();
 inline constexpr u64 u64_max = std::numeric_limits<u64>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr usize usize_min = std::numeric_limits<usize>::min();
 inline constexpr usize usize_max = std::numeric_limits<usize>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Signed
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using i8 = int8_t;
 using i16 = int16_t;
 using i32 = int32_t;
 using i64 = int64_t;
 using isize = ptrdiff_t;
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr i8 i8_min = std::numeric_limits<i8>::min();
 inline constexpr i8 i8_max = std::numeric_limits<i8>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr i16 i16_min = std::numeric_limits<i16>::min();
 inline constexpr i16 i16_max = std::numeric_limits<i16>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr i32 i32_min = std::numeric_limits<i32>::min();
 inline constexpr i32 i32_max = std::numeric_limits<i32>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr i64 i64_min = std::numeric_limits<i64>::min();
 inline constexpr i64 i64_max = std::numeric_limits<i64>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr isize isize_min = std::numeric_limits<isize>::min();
 inline constexpr isize isize_max = std::numeric_limits<isize>::max();
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Floating point
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using f32 = float;
+using f64 = double;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr f32 f32_min = std::numeric_limits<f32>::min();
 inline constexpr f32 f32_max = std::numeric_limits<f32>::max();
 inline constexpr f32 f32_epsilon = std::numeric_limits<f32>::epsilon();
-
-using f64 = double;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 inline constexpr f64 f64_min = std::numeric_limits<f64>::min();
 inline constexpr f64 f64_max = std::numeric_limits<f64>::max();
 inline constexpr f64 f64_epsilon = std::numeric_limits<f64>::epsilon();
-
-} // namespace AliasNum
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+} // namespace Alias_Num
 using ull = unsigned long long;
 using ill = signed long long;
 using fll = double long;
-using namespace AliasNum;
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-namespace AliasStl {
+using namespace Alias_Num;
+
+////////////////////////////////////////////////////////////////////////////////
+//                                 STL                                        //
+////////////////////////////////////////////////////////////////////////////////
+
+namespace Alias_Stl {
 
 // Unique pointer
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Uptr = std::unique_ptr<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T, typename... Args>
 [[nodiscard]] inline constexpr Uptr<T> u_new(Args &&...args) {
     return std::make_unique<T>(std::forward<Args>(args)...);
 }
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Shared pointer
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Sptr = std::shared_ptr<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T, typename... Args>
 [[nodiscard]] inline constexpr Sptr<T> s_new(Args &&...args) {
     return std::make_shared<T>(std::forward<Args>(args)...);
 }
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Unordered Map
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename K, typename V>
 using Umap = std::unordered_map<K, V>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Ordered Map
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename K, typename V>
 using Omap = std::map<K, V>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Unordered Set
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Uset = std::unordered_set<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Ordered Set
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Oset = std::set<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Dynamic Array
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Vec = std::vector<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Array
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T, size_t S>
 using Arr = std::array<T, S>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Optional
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Opt = std::optional<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using OptRef = std::optional<std::reference_wrapper<T>>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // String
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using Str = std::string;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using StrView = std::string_view;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Function
 template <typename T>
 using Fn = std::function<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using VoidFn = Fn<void()>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using BoolFn = Fn<bool()>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Span
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using Span = std::span<T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename T>
 using SpanConst = std::span<const T>;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 // Chrono
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using Clock = std::chrono::high_resolution_clock;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using TimePoint = Clock::time_point;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+} // namespace Alias_Stl
+using namespace Alias_Stl;
 
-} // namespace AliasStl
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-using namespace AliasStl;
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-namespace AliasGlm {
+////////////////////////////////////////////////////////////////////////////////
+//                                 GLM                                        //
+////////////////////////////////////////////////////////////////////////////////
+
+namespace Alias_Glm {
 #ifdef yyLib_Glm
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using Vec2 = glm::vec2;
 using Vec3 = glm::vec3;
 using Vec4 = glm::vec4;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using Mat4 = glm::mat4;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #endif
-} // namespace AliasGlm
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-using namespace AliasGlm;
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+} // namespace Alias_Glm
+using namespace Alias_Glm;
+
+} // namespace y
 
 
-////////////////////////////////////////////////////////////////////////////////
-//                              CONCEPTs                                      //
-////////////////////////////////////////////////////////////////////////////////
+//==============================================================================
+//=  OSTREAM HELPERs
+//==============================================================================
 
-namespace Concepts {
+namespace y { // Concepts 1
 
 template <typename T, typename... Allowed>
-concept IsOneOf = (std::same_as<T, Allowed> || ...);
+concept T_OneOf = (std::same_as<T, Allowed> || ...);
 
 template <typename T>
-concept IsInteger = std::integral<T>;
+concept T_StlContainer = T_OneOf<T, Vec<T>, Uset<T>>;
+
+} // namespace y
+
+#if 1 // Print helpers
+
+template <y::T_StlContainer T>
+std::ostream &operator<<(std::ostream &os, T const &container) {
+    y::usize n = container.size() - 1ul;
+    os << "[ ";
+    for (y::usize i = 0ul; i < n; ++i) {
+        os << container[i];
+        os << ", ";
+    }
+    os << container[n] << " ]";
+    return os;
+}
+
+#endif // Print helpers
+
+
+//==============================================================================
+//= CONCEPTS
+//==============================================================================
+
+namespace y { // Concepts 2
 
 template <typename T>
-concept IsDecimal = std::floating_point<T>;
+concept T_Integer = std::integral<T>;
 
 template <typename T>
-concept IsNumber = std::integral<T> || std::floating_point<T>;
+concept T_Decimal = std::floating_point<T>;
 
 template <typename T>
-concept IsCharList = std::same_as<T, Vec<u8>> || requires(T const &t) {
+concept T_Number = std::integral<T> || std::floating_point<T>;
+
+template <typename T>
+concept T_CharList = std::same_as<T, Vec<u8>> || requires(T const &t) {
     { t.data() } -> std::convertible_to<const char *>;
     { t.size() } -> std::integral;
 };
 
+template <typename T>
+concept T_Streamable = requires(std::ostream &os, T const &value) { os << value; };
+
 #ifdef yyLib_Glm
 template <typename T>
-concept IsMathVec = IsOneOf<T, Vec2, Vec3, Vec4>;
+concept T_MathVec = T_OneOf<T, Vec2, Vec3, Vec4>;
 #endif
 
-} // namespace Concepts
-namespace tc = Concepts;
+} // namespace y
 
+
+//==============================================================================
+//= FORMAT and PRINT
+//==============================================================================
+
+#if 1 // Format and print
+
+#ifdef yyLib_Fmt //!! Using fmtlib
+#undef yyCustom_Fmt
+#define __yPrinter(msg) fmt::print(msg)
+#define y_fmt(msg, ...) fmt::format((msg), ##__VA_ARGS__)
+#else //!! Not using fmtlib (rely on std::cout)
+#include <iostream>
+#include <regex>
+#ifdef _WIN32
+#include <windows.h>
+static const int __yWinCoutSetup = []() {
+    SetConsoleOutputCP(CP_UTF8);
+    return 0;
+}();
+#endif
+#define __yPrinter(x) std::cout << x;
+template <typename... Args>
+std::string y_fmt(std::string_view msg, Args... args) {
+    std::ostringstream oss;
+    oss << std::boolalpha;
+
+    static auto const fmt = [](std::ostringstream &oss, std::string_view &msg, auto &&arg) {
+        size_t const curly_l = msg.find('{');
+        if (curly_l == std::string::npos) {
+            return;
+        }
+        size_t const curly_r = msg.find('}', curly_l + 1);
+        if (curly_r == std::string::npos) {
+            return;
+        }
+
+        oss << msg.substr(0, curly_l);
+        // oss << std::forward<decltype(arg)>(arg);
+
+        if constexpr (y::T_Streamable<std::decay_t<decltype(arg)>>) {
+            oss << std::forward<decltype(arg)>(arg);
+        } else {
+            oss << "[No-print-oveload-found]";
+        }
+
+        msg = msg.substr(curly_r + 1);
+    };
+
+    using fake_loop = int[];
+    (void)fake_loop { 0, (fmt(oss, msg, std::forward<Args>(args)), 0)... };
+
+    oss << msg;
+    return oss.str();
+}
+#endif
+
+//--- Actual print API ---------------------------------------------------------
+
+#ifndef yyDisable_LogFileAndLine
+#define __yLogInfo(level) y_fmt("[{}] | {}:{} | ", level, __FILE__, __LINE__)
+#else
+#define __yLogInfo(level) y_fmt("[{}] | ", level)
+#endif
+
+#ifdef yyEnable_PrintFileAndLine
+#define __yPrintInfo() y_fmt("[PRNT] | {}:{} | ", __FILE__, __LINE__)
+#else
+#define __yPrintInfo() ""
+#endif
+
+#define y_info(msg, ...)                                                                           \
+    __yPrinter(y_fmt("{}{}\n", __yLogInfo("INFO"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_warn(msg, ...)                                                                           \
+    __yPrinter(y_fmt("{}{}\n", __yLogInfo("WARN"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_err(msg, ...) __yPrinter(y_fmt("{}{}\n", __yLogInfo("ERRO"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_debug(msg, ...)                                                                          \
+    __yPrinter(y_fmt("{}{}\n", __yLogInfo("DEBG"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_println(msg, ...) __yPrinter(y_fmt("{}{}\n", __yPrintInfo(), y_fmt((msg), ##__VA_ARGS__)))
+#define y_print(msg, ...) __yPrinter(y_fmt("{}{}", __yPrintInfo(), y_fmt((msg), ##__VA_ARGS__)))
+
+#endif // Format and print
+
+
+//==============================================================================
+//= NAMESPACE : Core
+//==============================================================================
+
+namespace y { // Core
 
 ////////////////////////////////////////////////////////////////////////////////
 //                               HELPERs                                      //
@@ -486,9 +593,11 @@ struct LazyGC final {
     }
     //--------------------------------------------------------------------------
     void release() {
-        if (!m_done)
-            for (auto &callback : m_callbacks)
+        if (!m_done) {
+            for (auto &callback : m_callbacks) {
                 callback();
+            }
+        }
         m_callbacks.clear();
         m_done = true;
     }
@@ -814,12 +923,12 @@ b8 file_write(Str const &output_file, char const *data, usize data_size,
     return true;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsCharList T>
+template <T_CharList T>
 inline b8 file_append(Str const &output_file, T const &v) {
     return file_write(output_file, (char const *)(v.data()), v.size(), std::ios::app);
 } // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // -
-template <tc::IsCharList T>
+template <T_CharList T>
 inline b8 file_overwrite(Str const &output_file, T const &v) {
     return file_write(output_file, (char const *)(v.data()), v.size(), std::ios::trunc);
 }
@@ -836,30 +945,30 @@ inline b8 file_check_extension(Str const &input_file, Str ext_ref) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsNumber T>
+template <T_Number T>
 [[nodiscard]] constexpr inline T clamp(T v, T lo, T hi) {
     assert(lo >= hi);
     return std::max(lo, std::min(v, hi));
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsDecimal T>
+template <T_Decimal T>
 [[nodiscard]] constexpr inline T map(T value, T src_min, T src_max, T dst_min, T dst_max) {
     return dst_min + (dst_max - dst_min) * (value - src_min) / (src_max - src_min);
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsDecimal T>
+template <T_Decimal T>
 [[nodiscard]] constexpr inline T map_100(T value, T dst_min, T dst_max) {
     return map(value, 0, 100, dst_min, dst_max);
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsDecimal T>
+template <T_Decimal T>
 [[nodiscard]] constexpr inline b8 fuzzy_eq(T f1, T f2, T threshold = 0.01f) {
     auto const diff = abs(f1 - f2);
     auto const is_eq = diff <= threshold;
     return is_eq;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-template <tc::IsDecimal T>
+template <T_Decimal T>
 [[nodiscard]] constexpr inline T clamp_angle(T angle) {
     auto const turns = floorf(angle / 360.f);
     return angle - 360.f * turns;
@@ -950,7 +1059,7 @@ public:
     //--------------------------------------------------------------------------
     void test(StrView title, Fn<bool()> const &fn, StrView msg = "") {
         if (!fn) {
-            abort();
+            on_failed(title, y_fmt("Invalid callback -- {}", msg));
         }
         on_start();
         try {
@@ -1063,7 +1172,7 @@ private:
 //==============================================================================
 
 #ifdef yyEnable_Aliases
-using namespace y::AliasStl;
-using namespace y::AliasNum;
-using namespace y::AliasGlm;
+using namespace y::Alias_Stl;
+using namespace y::Alias_Num;
+using namespace y::Alias_Glm;
 #endif
