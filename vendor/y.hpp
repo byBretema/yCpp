@@ -4,28 +4,28 @@
 
     Some C++ aliases, helpers and wrappers repeated along different projects.
 
-    #define yyExposeAliases
+    #define yyEnable_Aliases
         Expose aliases defined in 'y' namespace :
         i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...
 
-    #define yyUseLibFmt
+    #define yyLib_Fmt
         Include basic fmt header file(s) and expose, basic log methods:
-        y_info/Warn/Err/Debug. This will undefine 'yyUseCustomFmt'
+        y_info/warn/err/debug. This will undefine 'yyCustom_Fmt'
 
-    #define yyUseLibArgparse
+    #define yyLib_Argparse
         Include argparse header file(s) and expose y::cli_xxx methods
 
-    #define yyUseLibGlm
+    #define yyLib_Glm
         Include basic glm header files
 
-    #define yyUseCustomFmt
+    #define yyCustom_Fmt
         Include simplistic fmt-like custom implementation.
-        It could be undefined by 'yyUseLibFmt'
+        It could be undefined by 'yyLib_Fmt'
 
-    #define yyEnableTesting
+    #define yyEnable_Testing
         Include a class to easily run Tests.
 
-    #define yyEnableBenchmarking
+    #define yyEnable_Benchmarking
         Include a class to easily run Benchmarks.
 
     Used conventions:
@@ -81,14 +81,14 @@
 
 //--- ARGs ---------------------------------------------------------------------
 
-#ifdef yyUseLibArgparse
+#ifdef yyLib_Argparse
 //! https://github.com/p-ranav/argparse?tab=readme-ov-file#table-of-contents
 #include <argparse/argparse.hpp>
 #endif
 
 //--- FMT ----------------------------------------------------------------------
 
-#ifdef yyUseLibFmt
+#ifdef yyLib_Fmt
 #include <fmt/chrono.h>
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -97,7 +97,7 @@
 
 //--- GLM ----------------------------------------------------------------------
 
-#ifdef yyUseLibGlm
+#ifdef yyLib_Glm
 // #define GLM_FORCE_SSE
 // #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #define GLM_ENABLE_EXPERIMENTAL
@@ -124,8 +124,8 @@
 //= FORMAT and PRINT
 //==============================================================================
 
-#ifdef yyUseLibFmt //!! Using fmtlib
-#undef yyUseCustomFmt
+#ifdef yyLib_Fmt //!! Using fmtlib
+#undef yyCustom_Fmt
 
 //--- String Builder -----------------------------------------------------------
 
@@ -403,7 +403,7 @@ using TimePoint = Clock::time_point;
 using namespace AliasStl;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 namespace AliasGlm {
-#ifdef yyUseLibGlm
+#ifdef yyLib_Glm
 using Vec2 = glm::vec2;
 using Vec3 = glm::vec3;
 using Vec4 = glm::vec4;
@@ -439,7 +439,7 @@ concept IsCharList = std::same_as<T, Vec<u8>> || requires(T const &t) {
     { t.size() } -> std::integral;
 };
 
-#ifdef yyUseLibGlm
+#ifdef yyLib_Glm
 template <typename T>
 concept IsMathVec = IsOneOf<T, Vec2, Vec3, Vec4>;
 #endif
@@ -516,7 +516,7 @@ auto bind(F &&fn, T *obj) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#ifdef yyUseLibArgparse
+#ifdef yyLib_Argparse
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 using CLI = argparse::ArgumentParser;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -865,7 +865,7 @@ template <tc::IsDecimal T>
     return angle - 360.f * turns;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#ifdef yyUseLibGlm
+#ifdef yyLib_Glm
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 [[nodiscard]] constexpr inline b8 fuzzy_eq(Vec2 const &v1, Vec2 const &v2, f32 t = 0.01f) {
     return fuzzy_eq(v1.x, v2.x, t) && fuzzy_eq(v1.y, v2.y, t);
@@ -889,7 +889,7 @@ template <typename T>
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-#ifdef yyEnableTesting
+#ifdef yyEnable_Testing
 ////////////////////////////////////////////////////////////////////////////////
 //                                 TESTs                                      //
 ////////////////////////////////////////////////////////////////////////////////
@@ -944,6 +944,8 @@ public:
             y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
     }
     //--------------------------------------------------------------------------
+    i32 cli_result() { return m_pass_count == m_total_count ? 0 : -1; }
+    //--------------------------------------------------------------------------
     void set_align_column(usize col) { m_align_col = std::clamp(col, 0ul, 255ul); }
     //--------------------------------------------------------------------------
     void test(StrView title, Fn<bool()> const &fn, StrView msg = "") {
@@ -986,7 +988,7 @@ private:
 #endif
 
 
-#ifdef yyEnableBenchmarking
+#ifdef yyEnable_Benchmarking
 ////////////////////////////////////////////////////////////////////////////////
 //                              BENCHMARKS                                    //
 ////////////////////////////////////////////////////////////////////////////////
@@ -1060,7 +1062,7 @@ private:
 //= ALIASes
 //==============================================================================
 
-#ifdef yyExposeAliases
+#ifdef yyEnable_Aliases
 using namespace y::AliasStl;
 using namespace y::AliasNum;
 using namespace y::AliasGlm;

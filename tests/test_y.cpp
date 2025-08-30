@@ -1,7 +1,7 @@
 
-#define yyUseCustomFmt
-#define yyExposeAliases
-#define yyEnableTesting
+#define yyCustom_Fmt
+#define yyEnable_Aliases
+#define yyEnable_Testing
 #include "../vendor/y.hpp"
 
 int main() {
@@ -225,4 +225,5 @@ int main() {
     }
 
     T.show_results();
+    return T.cli_result();
 }

@@ -1,7 +1,8 @@
 #include <span>
 
-#define yyExposeAliases
-#define yyUseLibArgparse
+#define yyEnable_Aliases
+#define yyLib_Argparse
+#define yyLib_Glm
 #include <y.hpp>
 
 

@@ -1,7 +1,7 @@
 
-#define yyUseCustomFmt
-#define yyExposeAliases
-#define yyEnableBenchmarking
+#define yyCustom_Fmt
+#define yyEnable_Aliases
+#define yyEnable_Benchmarking
 #include "../vendor/y.hpp"
 
 int main() {
