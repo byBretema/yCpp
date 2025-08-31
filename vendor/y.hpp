@@ -470,13 +470,13 @@ concept T_MathVec = T_OneOf<T, Vec2, Vec3, Vec4>;
 //= FORMAT and PRINT
 //==============================================================================
 
-#if 1 // Format and print
-
+#if 1            // Format and print
 #ifdef yyLib_Fmt //!! Using fmtlib
 #undef yyCustom_Fmt
-#define __yPrinter(msg) fmt::print(msg)
-#define y_fmt(msg, ...) fmt::format((msg), ##__VA_ARGS__)
+#define y_fmt fmt::format
+#define __yPrinter(msg) fmt::print("{}", (msg))
 #else //!! Not using fmtlib (rely on std::cout)
+#warning "Using Non-Fmt print"
 #include <iostream>
 #include <regex>
 #ifdef _WIN32
@@ -486,7 +486,6 @@ static const int __yWinCoutSetup = []() {
     return 0;
 }();
 #endif
-#define __yPrinter(x) std::cout << x;
 template <typename... Args>
 std::string y_fmt(std::string_view msg, Args... args) {
     std::ostringstream oss;
@@ -520,6 +519,7 @@ std::string y_fmt(std::string_view msg, Args... args) {
     oss << msg;
     return oss.str();
 }
+#define __yPrinter(x) std::cout << (x);
 #endif
 
 //--- Actual print API ---------------------------------------------------------
@@ -890,7 +890,7 @@ using ETimer = ElapsedTimer;
     y_defer(file.close());
 
     if (!file.is_open()) {
-        y_warn("[file_read] Opening file: {}. Returned empty str", input_file);
+        y_warn("[file_read] Opening file: {}. Returned empty str.", input_file);
         return "";
     }
 

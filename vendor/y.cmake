@@ -15,8 +15,10 @@ set(yMetaList "" CACHE INTERNAL "")
 ###############################################################################
 ## Add package !
 
-function(yAdd pkg_name pkg_version pkg_url)
-    find_package(${pkg_name} ${pkg_version} QUIET)
+function(yAdd pkg_name pkg_version pkg_url force)
+    if (NOT ${force})
+        find_package(${pkg_name} ${pkg_version} QUIET)
+    endif()
     if (NOT ${pkg_name}_FOUND)
         message(STATUS "y · External : ${pkg_name}")
         FetchContent_Declare(${pkg_name} DOWNLOAD_EXTRACT_TIMESTAMP OFF URL ${pkg_url})
