@@ -17,9 +17,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 ###############################################################################
 ## Deps !
 
-yAdd( "fmt"       "11.1.4"  "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" FALSE)
-yAdd( "glm"       "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             FALSE)
-yAdd( "argparse"  "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        FALSE)
+y_add_library( "fmt"       "11.1.4"  "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" OFF)
+y_add_library( "glm"       "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             OFF)
+y_add_library( "argparse"  "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        OFF)
 
 ###############################################################################
 ## Compile !

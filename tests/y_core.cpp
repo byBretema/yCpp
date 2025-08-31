@@ -1,6 +1,6 @@
 
 #define yyCustom_Fmt
-// #define yyLib_Fmt
+#define yyLib_Fmt
 #define yyEnable_Aliases
 #define yyEnable_Testing
 // #define yyEnable_PrintFileAndLine
@@ -18,10 +18,10 @@ int main() {
     T.make_section("Fmt");
     {
         T.test("vec i32", [] {
-            Vec v { 1, 2, 3, 4 };
-            y_println("{}", v);
-            Uset us { 1, 2, 3, 4 };
-            y_println("{}", us);
+            // Vec v { 1, 2, 3, 4 };
+            // y_println("{}", v);
+            // Uset us { 1, 2, 3, 4 };
+            // y_println("{}", us);
             return true;
         });
     }

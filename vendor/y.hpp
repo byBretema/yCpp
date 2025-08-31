@@ -767,7 +767,7 @@ using ETimer = ElapsedTimer;
     return splitted;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-[[nodiscard]] Str str_join(Vec<Str> const &strlist, StrView delim) {
+[[nodiscard]] Str str_join(Vec<Str> const &strlist, Str const &delim) {
     if (strlist.empty() || delim.empty()) {
         return "";
     }
@@ -776,7 +776,7 @@ using ETimer = ElapsedTimer;
     s.reserve(strlist.size() + (delim.size() * strlist.size() + 4));
 
     for (usize i = 0; i < strlist.size() - 1; ++i) {
-        s += y_fmt("{}{}", strlist[i], delim);
+        s += strlist[i] + delim;
     }
     s += strlist[strlist.size() - 1];
 
