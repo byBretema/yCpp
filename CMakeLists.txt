@@ -26,3 +26,8 @@ y_add_library( "argparse"  "3.2"     "https://github.com/p-ranav/argparse/archiv
 
 include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/vendor)
 add_subdirectory(src)
+
+###############################################################################
+## Tests !
+
+y_enable_tests()

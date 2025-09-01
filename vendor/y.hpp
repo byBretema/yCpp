@@ -1,52 +1,74 @@
 #pragma once
 
-/* y.hpp - v0.0.1
+/* y.hpp - An opinionated wrapper over many CPP utils.
 
-    Some C++ aliases, helpers and wrappers repeated along different projects.
+    *************************************************************************
 
-    #define yyEnable_Aliases
-        Expose aliases defined in 'y' namespace :
-        i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...
+    yyLib_
 
-    #define yyLib_Fmt
-        Include basic fmt header file(s) and expose, basic log methods:
-        y_info/warn/err/debug. This will undefine 'yyCustom_Fmt'
+        #define yyLib_Fmt
+            Include basic fmt header file(s) and expose, basic log methods:
+            y_info/warn/err/debug. This will undefine 'yyCustom_Fmt'
 
-    #define yyLib_Argparse
-        Include argparse header file(s) and expose y::cli_xxx methods
+        #define yyLib_Argparse
+            Include argparse header file(s) and expose y::cli_xxx methods
 
-    #define yyLib_Glm
-        Include basic glm header files
+        #define yyLib_Glm
+            Include basic glm header files
 
-    #define yyCustom_Fmt
-        Include simplistic fmt-like custom implementation.
-        It could be undefined by 'yyLib_Fmt'
+    *************************************************************************
 
-    #define yyEnable_Testing
-        Include a class to easily run Tests.
+    yyCustom_
 
-    #define yyEnable_Benchmarking
-        Include a class to easily run Benchmarks.
+        #define yyCustom_Fmt
+            Include simplistic fmt-like custom implementation.
+            It could be undefined by 'yyLib_Fmt'
 
-    #define yyDisable_LogFileAndLine
-        Hide file and line on y_info/warn...
+    *************************************************************************
 
-    #define yyEnable_PrintFileAndLine
-        Include file and line info also on y_print not only on y_info/warn...
+    yyEnable_
 
-    Used conventions:
-    - camelCase  : Defines            : Prefix 'yy'
-    - snake_case : Macros             : Prefix 'y_'
-    - PascalCase : Types + Namespaces : Inside 'y' namespace
-    - PascalCase : Concepts           : Inside 'y' namespace. Prefix 'T_'
-    - snake_case : Vars  + Funcs      : Inside 'y' namespace
-    - m_ prefix  : Private vars
-    - s_ prefix  : Static  vars
+        #define yyEnable_Aliases
+            Expose aliases defined in 'y' namespace :
+            i32, f32, Vec, Arr, Str, Sptr, Uptr, Vec2, Vec3, ...
+
+        #define yyEnable_Testing
+            Include a class to easily run Tests.
+
+        #define yyEnable_Benchmarking
+            Include a class to easily run Benchmarks.
+
+        #define yyEnable_PrintFileAndLine
+            Include file and line info also on y_print not only on y_info/warn...
+
+    *************************************************************************
+
+    yyDisable_
+
+        #define yyDisable_LogFileAndLine
+            Hide file and line on y_info/warn...
+
+    *************************************************************************
+
+    Convetions
+
+        - camelCase  : Defines            : Prefix 'yy'
+        - snake_case : Macros             : Prefix 'y_'
+        - PascalCase : Types + Namespaces : Inside 'y' namespace
+        - PascalCase : Concepts           : Inside 'y' namespace. Prefix 'T_'
+        - snake_case : Vars  + Funcs      : Inside 'y' namespace
+        - m_ prefix  : Private vars
+        - s_ prefix  : Static  vars
+
+    *************************************************************************
 
     Copyright Daniel Brétema, 2025.
     Distributed under the Boost Software License, Version 1.0.
     See complete details at https://www.boost.org/LICENSE_1_0.txt
+
+    *************************************************************************
 */
+
 
 //==============================================================================
 //= INCLUDES
