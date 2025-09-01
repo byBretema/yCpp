@@ -1,8 +1,32 @@
 # y.cmake - A nano wrapper over FetchContent
 
+# Usage:
+
+#     On parent (or project) CMake
+
+#         y_add_dep( "fmt"       "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" ON )
+#         y_add_dep( "glm"      "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             ON )
+#         y_add_dep( "argparse" "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        ON )
+
+#         This will populate the ./build/deps dir with given dependencies.
+#         The last arg is allow_system.
+#             - OFF means 'always download'
+#             - ON  means 'try to find it on system'
+
+#     On project CMake
+
+#         y_link_libraries(${PROJECT_NAME})
+#             This will link the project with all the libraries added in previous
+#             section.
+
+#         y_enable_tests()
+#             This will add all the .cpp, .cc or .c in the ./tests dir as tests
+#             to later run with 'ctest'.
+
 # Copyright Daniel Brétema, 2025.
 # Distributed under the Boost Software License, Version 1.0.
 # See complete details at https://www.boost.org/LICENSE_1_0.txt
+
 
 include(FetchContent)
 
@@ -72,51 +96,84 @@ endfunction()
 
 
 ###############################################################################
-## Tests !
+## Glob !
 
-function(y_enable_tests)
+function(y_glob root_dir out_sources out_headers)
 
-    # message(STATUS "y · Adding Tests!")
+    file(GLOB _sources "${root_dir}*.cpp" "${root_dir}*.cc" "${root_dir}*.c")
+    set(${out_sources} "${_sources}" PARENT_SCOPE)
 
-    # enable_testing()
+    file(GLOB _headers "${root_dir}*.hpp" "${root_dir}*.hh" "${root_dir}*.h")
+    set(${out_headers} "${_headers}" PARENT_SCOPE)
 
-    # set(rel_path "${CMAKE_SOURCE_DIR}/tests/")
-    # file(GLOB y_meta_tests RELATIVE "${rel_path}" "${rel_path}*.cpp" "${rel_path}*.cc" "${rel_path}*.c")
-    # message(STATUS "y · Adding ---> ${y_meta_tests}")
+endfunction()
 
-    # foreach(test_source IN LISTS y_meta_tests)
 
-    #     get_filename_component(test_name "${test_source}" NAME_WE)
-    #     add_executable(${test_name} ${test_source})
 
-    #     y_set_output_folder(${test_name} "tests")
-    #     y_link_libraries(${test_name})
+###############################################################################
+## Executable !
 
-    #     add_test(NAME ${test_name} COMMAND ${test_name})
+function(y_add_exe proj_name proj_root_dir)
 
-    #     message(STATUS "y · Added Test : ${test_name} from '${test_source}'")
+    # Include the headers to help IDEs
+    # -- https://blog.conan.io/2019/09/02/Deterministic-builds-with-C-C++.html
 
-    # endforeach()
+    y_glob(${proj_root_dir} _sources _headers)
+    add_executable(${proj_name} ${_sources} ${_headers})
 
 endfunction()
 
 
 ###############################################################################
-## How To Use !
+## Target setup !
 
-# On parent (or project) CMake
+# function(y_target_setup proj_name output_dir do_link_libraries)
 
-# y_add_dep("fmt" "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip")
-# y_add_dep("glm" "1.0.1" "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip")
-# y_add_dep("argparse" "3.2" "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip")
+#     # Output
+#     y_set_output_folder(${proj_name} "bin")
 
-# On project CMake
+#     # Properties
+#     set_target_properties(${proj_name}
+#         PROPERTIES
+#             CMAKE_CXX_EXTENSIONS OFF
+#             CMAKE_CXX_VISIBILITY_PRESET hidden
+#             CMAKE_VISIBILITY_INLINES_HIDDEN ON
+#             CMAKE_EXPORT_COMPILE_COMMANDS ON
+#     )
 
-# string(REPLACE " " ";" yList "${y_meta_libs}")
-# target_link_libraries(${PROJECT_NAME} ${yList})
-# ... or
-# y_link_libraries(${PROJECT_NAME})
+#     # Includes
+#     target_include_directories(${proj_name} PUBLIC ${PROJECT_SOURCE_DIR})
 
-# y_enable_tests()
-# This will add all the .cpp, .cc or .c in the ./tests folder as tests
-# to later run with 'ctest'
+#     # Dependencies
+#     y_link_libraries(${proj_name})
+
+# endfunction()
+
+
+###############################################################################
+## Tests !
+
+function(y_enable_tests)
+
+    message(STATUS "y · TESTs Enabled!")
+
+    enable_testing()
+
+    y_glob("${CMAKE_SOURCE_DIR}/tests/" _tests_sources _tests_headers)
+    message(STATUS "y · Adding ---> ${_tests_sources}")
+
+    foreach(test_source IN LISTS _tests_sources)
+
+        get_filename_component(test_name "${_tests_sources}" NAME_WE)
+        add_executable(${test_name} ${test_source})
+
+        y_set_output_folder(${test_name} "tests")
+        y_link_libraries(${test_name})
+
+        add_test(NAME ${test_name} COMMAND ${test_name})
+
+        message(STATUS "y · Added Test : ${test_name} from '${test_source}'")
+
+    endforeach()
+
+endfunction()

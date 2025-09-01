@@ -18,25 +18,23 @@ endif()
 ###############################################################################
 ## Target !
 
-# Sources  (Check: https://blog.conan.io/2019/09/02/Deterministic-builds-with-C-C++.html)
-file(GLOB_RECURSE SRCS ${PROJECT_SOURCE_DIR} *.c *.cc *.cpp)
-file(GLOB_RECURSE HDRS ${PROJECT_SOURCE_DIR} *.h *.hh *.hpp)  # Header files to help some IDEs
-add_executable(${PROJECT_NAME} ${SRCS} ${HDRS})
+y_add_exe(${PROJECT_NAME} ${PROJECT_SOURCE_DIR})
+y_target_setup(${PROJECT_NAME} "bin" TRUE)
 
-# Output
-y_set_output_folder(${PROJECT_NAME} "bin")
+# # Output
+# y_set_output_folder(${PROJECT_NAME} "bin")
 
-# Properties
-set_target_properties(${PROJECT_NAME}
-    PROPERTIES
-        CMAKE_CXX_EXTENSIONS OFF
-        CMAKE_CXX_VISIBILITY_PRESET hidden
-        CMAKE_VISIBILITY_INLINES_HIDDEN ON
-        CMAKE_EXPORT_COMPILE_COMMANDS ON
-)
+# # Properties
+# set_target_properties(${PROJECT_NAME}
+#     PROPERTIES
+#         CMAKE_CXX_EXTENSIONS OFF
+#         CMAKE_CXX_VISIBILITY_PRESET hidden
+#         CMAKE_VISIBILITY_INLINES_HIDDEN ON
+#         CMAKE_EXPORT_COMPILE_COMMANDS ON
+# )
 
-# Includes
-target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+# # Includes
+# target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
-# Dependencies
-y_link_libraries(${PROJECT_NAME})
+# # Dependencies
+# y_link_libraries(${PROJECT_NAME})
