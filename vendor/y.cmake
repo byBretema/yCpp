@@ -35,14 +35,28 @@ include(FetchContent)
 ## Vars !
 
 # Output Folder
-set(FETCHCONTENT_BASE_DIR ${CMAKE_BINARY_DIR}/../deps)
+set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/build/deps)
 
 # Global Variable w/ lib names
 set(y_meta_libs "" CACHE INTERNAL "")
 
 
 ###############################################################################
+## Macros !
+
+macro(y_define_constant cname cval)
+
+    set(${cname} "${cval}" CACHE INTERNAL "Const ${cname}:${cval}" FORCE)
+    # set_property(CACHE ${cname} PROPERTY READONLY ON)
+
+endmacro()
+
+
+###############################################################################
 ## Add package !
+
+y_define_constant(Y_ALLOW_SYSTEM_TRUE ON)
+y_define_constant(Y_ALLOW_SYSTEM_FALSE OFF)
 
 function(y_add_library lib_name lib_version lib_url allow_system)
 
@@ -51,18 +65,18 @@ function(y_add_library lib_name lib_version lib_url allow_system)
     endif()
 
 
-    set(get_from "System")
+    set(_get_from "System")
     if (NOT ${lib_name}_FOUND)
-        set(get_from "External")
+        set(_get_from "External")
         FetchContent_Declare(${lib_name} DOWNLOAD_EXTRACT_TIMESTAMP OFF URL ${lib_url})
         FetchContent_MakeAvailable(${lib_name})
     endif()
 
-    message(STATUS "y · ${get_from} : ${lib_name}")
+    message(STATUS "y · ${_get_from} : ${lib_name}")
 
-    set(tmp_list "${y_meta_libs} ${lib_name}")
-    string(STRIP ${tmp_list} clean_list)
-    set(y_meta_libs "${clean_list}" CACHE INTERNAL "")
+    set(_tmp_list "${y_meta_libs} ${lib_name}")
+    string(STRIP ${_tmp_list} _clean_list)
+    set(y_meta_libs "${_clean_list}" CACHE INTERNAL "")
 
 endfunction()
 
@@ -70,27 +84,31 @@ endfunction()
 ###############################################################################
 ## Link to project !
 
-function(y_link_libraries project)
-    string(REPLACE " " ";" local_deps "${y_meta_libs}")
-    message(STATUS "y · Linking : ${project} |${local_deps}|")
-    target_link_libraries(${project} PUBLIC ${local_deps})
+function(y_link_libraries proj_name)
+
+    string(REPLACE " " ";" _deps "${y_meta_libs}")
+    message(STATUS "y · Linking : ${proj_name} |${_deps}|")
+    target_link_libraries(${proj_name} PUBLIC ${_deps})
+
 endfunction()
 
 
 ###############################################################################
 ## Set output folder !
 
-function(y_set_output_folder project folder_name)
+function(y_set_output_folder proj_name dir_name)
 
     if (NOT MSVC)
-        set(subfolder ${CMAKE_BUILD_TYPE})
+        set(_build_type_dir ${CMAKE_BUILD_TYPE})
     else()
-        set(subfolder "")
+        set(_build_type_dir "")
     endif()
 
-    set_target_properties(${project} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../${folder_name}/${subfolder}")
-    set_target_properties(${project} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../${folder_name}/${subfolder}")
-    set_target_properties(${project} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../${folder_name}/${subfolder}")
+    set(_output_dir "${CMAKE_BINARY_DIR}/../${dir_name}/${_build_type_dir}")
+
+    set_target_properties(${proj_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${_output_dir}")
+    set_target_properties(${proj_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_output_dir}")
+    set_target_properties(${proj_name} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${_output_dir}")
 
 endfunction()
 
@@ -100,10 +118,10 @@ endfunction()
 
 function(y_glob root_dir out_sources out_headers)
 
-    file(GLOB _sources "${root_dir}*.cpp" "${root_dir}*.cc" "${root_dir}*.c")
+    file(GLOB _sources "${root_dir}/*.cpp" "${root_dir}/*.cc" "${root_dir}/*.c")
     set(${out_sources} "${_sources}" PARENT_SCOPE)
 
-    file(GLOB _headers "${root_dir}*.hpp" "${root_dir}*.hh" "${root_dir}*.h")
+    file(GLOB _headers "${root_dir}/*.hpp" "${root_dir}/*.hh" "${root_dir}/*.h")
     set(${out_headers} "${_headers}" PARENT_SCOPE)
 
 endfunction()
@@ -119,6 +137,10 @@ function(y_add_exe proj_name proj_root_dir)
     # -- https://blog.conan.io/2019/09/02/Deterministic-builds-with-C-C++.html
 
     y_glob(${proj_root_dir} _sources _headers)
+
+    message(STATUS "y · ${proj_name} -- ${proj_root_dir} -- ${_sources}")
+    # message(STATUS "y · ${proj_name} -- ${_headers}")
+
     add_executable(${proj_name} ${_sources} ${_headers})
 
 endfunction()
@@ -127,27 +149,35 @@ endfunction()
 ###############################################################################
 ## Target setup !
 
-# function(y_target_setup proj_name output_dir do_link_libraries)
+y_define_constant(Y_LINK_LIBRARIES_TRUE ON)
+y_define_constant(Y_LINK_LIBRARIES_FALSE OFF)
 
-#     # Output
-#     y_set_output_folder(${proj_name} "bin")
+function(y_setup_exe_project do_link_libraries)
 
-#     # Properties
-#     set_target_properties(${proj_name}
-#         PROPERTIES
-#             CMAKE_CXX_EXTENSIONS OFF
-#             CMAKE_CXX_VISIBILITY_PRESET hidden
-#             CMAKE_VISIBILITY_INLINES_HIDDEN ON
-#             CMAKE_EXPORT_COMPILE_COMMANDS ON
-#     )
+    get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+    project(${_name})
 
-#     # Includes
-#     target_include_directories(${proj_name} PUBLIC ${PROJECT_SOURCE_DIR})
+    y_add_exe(${PROJECT_NAME} ${PROJECT_SOURCE_DIR})
 
-#     # Dependencies
-#     y_link_libraries(${proj_name})
+    # Output
+    y_set_output_folder(${PROJECT_NAME} "bin/${PROJECT_NAME}")
 
-# endfunction()
+    # Properties
+    set_target_properties(${PROJECT_NAME}
+        PROPERTIES
+            CMAKE_CXX_EXTENSIONS OFF
+            CMAKE_CXX_VISIBILITY_PRESET hidden
+            CMAKE_VISIBILITY_INLINES_HIDDEN ON
+            CMAKE_EXPORT_COMPILE_COMMANDS ON
+    )
+
+    # Includes
+    target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
+
+    # Dependencies
+    y_link_libraries(${PROJECT_NAME})
+
+endfunction()
 
 
 ###############################################################################
