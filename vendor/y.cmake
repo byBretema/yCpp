@@ -46,8 +46,7 @@ set(y_meta_libs "" CACHE INTERNAL "")
 
 macro(y_define_constant cname cval)
 
-    set(${cname} "${cval}" CACHE INTERNAL "Const ${cname}:${cval}" FORCE)
-    # set_property(CACHE ${cname} PROPERTY READONLY ON)
+    set(${cname} "${cval}" CACHE INTERNAL "Const ? ${cname}:${cval}" FORCE)
 
 endmacro()
 
@@ -74,9 +73,9 @@ function(y_add_library lib_name lib_version lib_url allow_system)
 
     message(STATUS "y · ${_get_from} : ${lib_name}")
 
-    set(_tmp_list "${y_meta_libs} ${lib_name}")
-    string(STRIP ${_tmp_list} _clean_list)
-    set(y_meta_libs "${_clean_list}" CACHE INTERNAL "")
+    set(_libs_aux "${y_meta_libs} ${lib_name}")
+    string(STRIP ${_libs_aux} _libs_clean)
+    set(y_meta_libs "${_libs_clean}" CACHE INTERNAL "")
 
 endfunction()
 
@@ -94,9 +93,9 @@ endfunction()
 
 
 ###############################################################################
-## Set output folder !
+## Set output dir !
 
-function(y_set_output_folder proj_name dir_name)
+function(y_set_output_dir proj_name dir_name)
 
     if (NOT MSVC)
         set(_build_type_dir ${CMAKE_BUILD_TYPE})
@@ -147,6 +146,27 @@ endfunction()
 
 
 ###############################################################################
+## Top setup !
+
+function(y_setup_top_level cxx_standard)
+
+    get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+    project(_name)
+
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug)
+    endif()
+
+    set(CMAKE_CXX_STANDARD ${cxx_standard})
+    set(CMAKE_CXX_EXTENSIONS OFF)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/vendor)
+
+endfunction()
+
+
+###############################################################################
 ## Target setup !
 
 y_define_constant(Y_LINK_LIBRARIES_TRUE ON)
@@ -160,7 +180,7 @@ function(y_setup_exe_project do_link_libraries)
     y_add_exe(${PROJECT_NAME} ${PROJECT_SOURCE_DIR})
 
     # Output
-    y_set_output_folder(${PROJECT_NAME} "bin/${PROJECT_NAME}")
+    y_set_output_dir(${PROJECT_NAME} "bin/${PROJECT_NAME}")
 
     # Properties
     set_target_properties(${PROJECT_NAME}
@@ -175,8 +195,37 @@ function(y_setup_exe_project do_link_libraries)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
     # Dependencies
-    y_link_libraries(${PROJECT_NAME})
+    if (${do_link_libraries})
+        y_link_libraries(${PROJECT_NAME})
+    endif()
 
+endfunction()
+
+
+###############################################################################
+## Projects in curr path !
+
+function(y_get_projects output_variable)
+
+set(ignored_dirs ${ARGN})
+    set(found_dirs "")
+
+    set(_root_dir ${CMAKE_CURRENT_SOURCE_DIR})
+
+    file(GLOB children LIST_DIRECTORIES TRUE RELATIVE "${_root_dir}" "${_root_dir}/*")
+
+    foreach(dir ${children})
+        list(FIND ignored_dirs "${dir}" is_ignored)
+
+        if(is_ignored EQUAL -1)
+            string(SUBSTRING "${dir}" 0 1 first_char)
+            if(NOT first_char STREQUAL ".")
+                list(APPEND found_dirs "${dir}")
+            endif()
+        endif()
+    endforeach()
+
+    set(${output_variable} "${found_dirs}" PARENT_SCOPE)
 endfunction()
 
 
@@ -197,7 +246,7 @@ function(y_enable_tests)
         get_filename_component(test_name "${_tests_sources}" NAME_WE)
         add_executable(${test_name} ${test_source})
 
-        y_set_output_folder(${test_name} "tests")
+        y_set_output_dir(${test_name} "tests")
         y_link_libraries(${test_name})
 
         add_test(NAME ${test_name} COMMAND ${test_name})
