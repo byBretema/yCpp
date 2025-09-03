@@ -3,8 +3,10 @@ import sys
 import shutil
 import subprocess
 import argparse
+import mimetypes
 
 BUILD_DIR = "build"
+TESTS_DIR = "tests"
 
 
 def command_exists(cmd: str) -> bool:
@@ -14,6 +16,16 @@ def command_exists(cmd: str) -> bool:
 def error_exit(message: str) -> None:
     print(f"[ERR] - {message}", file=sys.stderr)
     sys.exit(1)
+
+
+def is_binary_by_mimetype(filepath):
+    try:
+        mime_type, _ = mimetypes.guess_type(filepath)
+        if mime_type:
+            return not mime_type.startswith('text/')
+    except:
+        pass
+    return False
 
 
 def main():
@@ -71,6 +83,19 @@ def main():
         build_type,
     ]
     subprocess.run(build_cmd, check=True)
+
+    # Tests
+    tests_dir = f"{BUILD_DIR}/tests"
+
+    if os.path.isdir(tests_dir):
+        for root, _, files in os.walk(tests_dir):
+            for filename in files:
+                filepath = os.path.join(root, filename)
+                if is_binary_by_mimetype(filepath):
+                    print(f"-- Running TEST : {filename}")
+
+    # Cleanup
+    if os.path.isdir(tests_dir):
 
 
 if __name__ == "__main__":

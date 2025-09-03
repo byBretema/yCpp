@@ -42,20 +42,7 @@ set(y_meta_libs "" CACHE INTERNAL "")
 
 
 ###############################################################################
-## Macros !
-
-macro(y_define_constant cname cval)
-
-    set(${cname} "${cval}" CACHE INTERNAL "Const ? ${cname}:${cval}" FORCE)
-
-endmacro()
-
-
-###############################################################################
 ## Add package !
-
-y_define_constant(Y_ALLOW_SYSTEM_TRUE ON)
-y_define_constant(Y_ALLOW_SYSTEM_FALSE OFF)
 
 function(y_add_library lib_name lib_version lib_url allow_system)
 
@@ -79,6 +66,15 @@ function(y_add_library lib_name lib_version lib_url allow_system)
 
 endfunction()
 
+function(y_add_external lib_name lib_version lib_url)
+    # set(_url "https://${lib_url}/archive/refs/tags/${lib_version}.zip")
+    y_add_library(${lib_name} ${lib_version} ${lib_url} OFF)
+endfunction()
+
+function(y_add_system lib_name lib_version lib_url)
+    y_add_library(${lib_name} ${lib_version} ${lib_url} ON)
+endfunction()
+
 
 ###############################################################################
 ## Link to project !
@@ -86,8 +82,9 @@ endfunction()
 function(y_link_libraries proj_name)
 
     string(REPLACE " " ";" _deps "${y_meta_libs}")
-    message(STATUS "y · Linking : ${proj_name} |${_deps}|")
-    target_link_libraries(${proj_name} PUBLIC ${_deps})
+    # message(STATUS "y ··· Linking : ${proj_name} |${_deps}|")
+    message(STATUS "y ··· Linking -> ${y_meta_libs}")
+    target_link_libraries(${proj_name} ${_deps})
 
 endfunction()
 
@@ -103,7 +100,8 @@ function(y_set_output_dir proj_name dir_name)
         set(_build_type_dir "")
     endif()
 
-    set(_output_dir "${CMAKE_BINARY_DIR}/../${dir_name}/${_build_type_dir}")
+    # set(_output_dir "${CMAKE_BINARY_DIR}/../${dir_name}/${_build_type_dir}")
+    set(_output_dir "${CMAKE_BINARY_DIR}/../${dir_name}")
 
     set_target_properties(${proj_name} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${_output_dir}")
     set_target_properties(${proj_name} PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_output_dir}")
@@ -148,10 +146,7 @@ endfunction()
 ###############################################################################
 ## Top setup !
 
-function(y_setup_top_level cxx_standard)
-
-    get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-    project(_name)
+macro(y_set_defaults cxx_standard)
 
     if(NOT CMAKE_BUILD_TYPE)
         set(CMAKE_BUILD_TYPE Debug)
@@ -161,18 +156,18 @@ function(y_setup_top_level cxx_standard)
     set(CMAKE_CXX_EXTENSIONS OFF)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-    include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/vendor)
+    if(IS_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
+        include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/vendor")
+    endif()
 
-endfunction()
+endmacro()
 
 
 ###############################################################################
 ## Target setup !
 
-y_define_constant(Y_LINK_LIBRARIES_TRUE ON)
-y_define_constant(Y_LINK_LIBRARIES_FALSE OFF)
-
-function(y_setup_exe_project do_link_libraries)
+function(y_setup_exe_project)
+    cmake_parse_arguments(_args "do_link_libraries" "" "" ${ARGN})
 
     get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
     project(${_name})
@@ -195,7 +190,7 @@ function(y_setup_exe_project do_link_libraries)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
     # Dependencies
-    if (${do_link_libraries})
+    if (${_args_do_link_libraries})
         y_link_libraries(${PROJECT_NAME})
     endif()
 
@@ -205,27 +200,36 @@ endfunction()
 ###############################################################################
 ## Projects in curr path !
 
-function(y_get_projects output_variable)
+function(y_auto_projects)
 
-set(ignored_dirs ${ARGN})
-    set(found_dirs "")
+    set(_ignore_list ${ARGN})
 
+    set(_found_dirs "")
     set(_root_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
-    file(GLOB children LIST_DIRECTORIES TRUE RELATIVE "${_root_dir}" "${_root_dir}/*")
+    # Get everything
+    file(GLOB _root_content LIST_DIRECTORIES TRUE RELATIVE "${_root_dir}" "${_root_dir}/*")
 
-    foreach(dir ${children})
-        list(FIND ignored_dirs "${dir}" is_ignored)
+    # Filter valid folders
+    foreach(_item ${_root_content})
+        list(FIND _ignore_list "${_item}" _ignored)
 
-        if(is_ignored EQUAL -1)
-            string(SUBSTRING "${dir}" 0 1 first_char)
-            if(NOT first_char STREQUAL ".")
-                list(APPEND found_dirs "${dir}")
+        if((_ignored EQUAL -1) AND (IS_DIRECTORY "${_root_dir}/${_item}"))
+            string(SUBSTRING "${_item}" 0 1 _first)
+
+            if(NOT (_first STREQUAL "."))
+                list(APPEND _found_dirs "${_item}")
             endif()
+
         endif()
     endforeach()
 
-    set(${output_variable} "${found_dirs}" PARENT_SCOPE)
+    # Add subdirs
+    foreach(_dir ${_found_dirs})
+        message(STATUS "y · Project : ${_dir}")
+        add_subdirectory("${_dir}")
+    endforeach()
+
 endfunction()
 
 
@@ -234,24 +238,23 @@ endfunction()
 
 function(y_enable_tests)
 
-    message(STATUS "y · TESTs Enabled!")
+    message(STATUS "y · Enabling tests")
 
     enable_testing()
 
-    y_glob("${CMAKE_SOURCE_DIR}/tests/" _tests_sources _tests_headers)
-    message(STATUS "y · Adding ---> ${_tests_sources}")
+    y_glob("${CMAKE_SOURCE_DIR}/tests" _sources _headers)
 
-    foreach(test_source IN LISTS _tests_sources)
+    foreach(_source IN LISTS _sources)
 
-        get_filename_component(test_name "${_tests_sources}" NAME_WE)
-        add_executable(${test_name} ${test_source})
+        get_filename_component(_name "${_source}" NAME_WE)
+        add_executable(${_name} "${_source}")
 
-        y_set_output_dir(${test_name} "tests")
-        y_link_libraries(${test_name})
+        y_set_output_dir(${_name} "tests")
+        y_link_libraries(${_name})
 
-        add_test(NAME ${test_name} COMMAND ${test_name})
+        add_test(NAME "${_name}" COMMAND "${_name}")
 
-        message(STATUS "y · Added Test : ${test_name} from '${test_source}'")
+        message(STATUS "y · Test : ${_name} from '${_source}'")
 
     endforeach()
 
