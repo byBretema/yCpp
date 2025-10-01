@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION ${TopCmakeMinVer})
 include(vendor/y.cmake)
 
 get_filename_component(TopName ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-project(TopName)
+project(${TopName})
 
 y_set_defaults(20)
 

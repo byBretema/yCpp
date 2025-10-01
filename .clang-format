@@ -10,7 +10,7 @@ IndentWidth: 4
 AccessModifierOffset: -4
 ContinuationIndentWidth: 2
 
-ColumnLimit: 100
+ColumnLimit: 120
 BreakTemplateDeclarations: Yes
 
 PointerAlignment: Right
@@ -19,4 +19,6 @@ ReferenceAlignment: Right
 Cpp11BracedListStyle: false      # 'false' => { a, b, c } instead of {a, b, c}
 SpaceBeforeCpp11BracedList: true # 'true'  => x { 1 } instead of x{ 1 }
 
+#### BreakBeforeBraces: Allman
+#### AllowShortLambdasOnASingleLine: Empty
 ...
