@@ -3,8 +3,11 @@ import sys
 import shutil
 import subprocess
 import argparse
-import mimetypes
-from pathlib import Path
+from typing import NoReturn, Callable
+import traceback
+
+# import mimetypes
+# from pathlib import Path
 
 ################################################################################
 # Globals
@@ -44,13 +47,42 @@ def print_deco(
 
 
 ################################################################################
-def command_exists(cmd: str) -> bool:
-    return shutil.which(cmd) is not None
+def _is_required(item: str, check_func: Callable[[str], bool | str | None], item_type: str, info: str = ""):
+    info = f" {info}" if info else ""
+    if not check_func(item):
+        error_exit(f"{item_type.capitalize()} '{item}' is required.{info}")
+    print(f"@ Found: {item}")
 
 
 ################################################################################
-def error_exit(message: str) -> None:
-    print(f"[ERR] - {message}", file=sys.stderr)
+def command_required(cmd: str, info: str = ""):
+    _is_required(cmd, shutil.which, "Command", info)
+
+
+################################################################################
+def file_required(path: str, info: str = ""):
+    _is_required(path, os.path.isfile, "File", info)
+
+
+################################################################################
+def folder_required(path: str, info: str = ""):
+    _is_required(path, os.path.isdir, "Folder", info)
+
+
+################################################################################
+def error_exit(message: str, exception=None, traceback_on_fail: bool = True) -> NoReturn:
+    sep = "\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n"
+
+    exception_err = f" | {type(exception)}\n{str(exception)}" if exception else ""
+    err = f"{sep}@ ERROR | {message}{exception_err}"
+
+    print(err, file=sys.stderr)
+
+    if exception and traceback_on_fail:
+        t_sep = "\n\nttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n\n"
+        print(f"{t_sep}{traceback.format_exc()}", file=sys.stderr)
+
+    print()
     sys.exit(1)
 
 
@@ -96,14 +128,13 @@ def main():
     ############################################################################
     # Check required commands
 
-    if not command_exists("cmake"):
-        error_exit("Command 'cmake' is required")
+    command_required("cmake")
 
-    if cmake_gen == "Ninja" and not command_exists("ninja"):
-        error_exit("Command 'ninja' is required")
+    if cmake_gen == "Ninja":
+        command_required("ninja")
 
     ############################################################################
-    # Cleanup
+    # PreBuild Cleanup
 
     if args.fullcleanup and os.path.isdir(BUILD_DIR):
         shutil.rmtree(BUILD_DIR)
@@ -118,7 +149,7 @@ def main():
 
     print(f"\n\n# CONFIG\n")
     print_deco(None)
-    config_cmd = ["cmake", "-G", cmake_gen, "../..", f"-DCMAKE_BUILD_TYPE={build_type}"]
+    config_cmd = ["cmake", "-G", cmake_gen, "../..", f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_POLICY_VERSION_MINIMUM=3.10"]
     subprocess.run(config_cmd, check=True, cwd=sub_build_dir)
     print_deco(None)
 
@@ -158,7 +189,7 @@ def main():
 
         ok = tests_passed == tests_total
 
-        mark = "✅️" if ok else "❌️"
+        mark = "✅️" if ok else "⛔️"
         status = "PASS" if ok else "FAIL"
         print(f"\n-- Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
 
@@ -170,8 +201,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        error_exit("User interrupts execution.")
-    except PermissionError:
-        error_exit("Some files are in use, cannot run the script.")
+        error_exit("User interrupts execution")
+    except PermissionError as e:
+        error_exit("Files in use / Folder not found", e)
     except Exception as e:
-        error_exit(f"Unexpected | {type(e)}\n\t    {str(e)}")
+        error_exit(f"Unexpected", e)
