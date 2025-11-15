@@ -12,9 +12,5 @@ y_add_external("fmt"       "11.1.4"  "https://github.com/fmtlib/fmt/releases/dow
 y_add_external("glm"       "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"            )
 y_add_external("argparse"  "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"       )
 
-# y_add_external("fmt"       "11.1.4"  "github.com/fmtlib/fmt")
-# y_add_external("glm"       "1.0.1"   "github.com/g-truc/glm")
-# y_add_external("argparse"  "3.2"     "github.com/p-ranav/argparse")
-
 y_auto_projects(build tests vendor)
 y_enable_tests()

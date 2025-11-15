@@ -2,16 +2,20 @@
 
 # Usage:
 
-#     On parent (or project) CMake
+#     On parent/top (or project) CMake
 
-#         y_add_dep( "fmt"       "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" ON )
-#         y_add_dep( "glm"      "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             ON )
-#         y_add_dep( "argparse" "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        ON )
+#         y_add_library( "fmt"       "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" [ON|OFF])
+#         y_add_library( "glm"      "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             [ON|OFF])
+#         y_add_library( "argparse" "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        [ON|OFF])
 
 #         This will populate the ./build/deps dir with given dependencies.
 #         The last arg is allow_system.
 #             - OFF means 'always download'
 #             - ON  means 'try to find it on system'
+
+#         Alternatively use the methods:
+#             - y_add_external : To 'always download' if not found in 'deps'
+#             - y_add_system   : To 'try to find it on system'
 
 #     On project CMake
 
@@ -189,7 +193,7 @@ endmacro()
 ## Target setup !
 
 function(y_setup_exe_project)
-    cmake_parse_arguments(_args "do_link_libraries" "" "" ${ARGN})
+    cmake_parse_arguments(_args_ "link_libraries" "" "" ${ARGN})
 
     get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
     project(${_name})
@@ -212,7 +216,7 @@ function(y_setup_exe_project)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
     # Dependencies
-    if (${_args_do_link_libraries})
+    if (${_args__link_libraries})
         y_link_libraries(${PROJECT_NAME})
     endif()
 

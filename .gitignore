@@ -2,6 +2,8 @@
 build/
 tests/output/
 
+__pycache__
+
 # Prerequisites
 *.d
 

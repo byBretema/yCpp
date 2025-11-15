@@ -3,107 +3,16 @@ import sys
 import shutil
 import subprocess
 import argparse
-from typing import NoReturn, Callable
-import traceback
 
-# import mimetypes
-# from pathlib import Path
+import vendor.y as y
 
-################################################################################
-# Globals
 
 BUILD_DIR = "build"
 TESTS_DIR = "tests"
 
 
-################################################################################
-def print_deco(
-    title: str | None,
-    pre_ln: bool = False,
-    post_ln: bool = False,
-    align_right: bool = False,
-    sep_offset: int = 0,  # len() could miss-count when the string contains emojis
-):
-
-    template = "-- ❱{t}{s}❰"
-    if title:
-        template = "-- ❱ {t} ❰{s}❰"
-        if align_right:
-            template = "-- ❱{s}❱ {t} ❰"
-    else:
-        title = ""
-
-    template_with_title = template.format(t=title, s="")
-    n_sep = max(80 - len(template_with_title) - sep_offset, 0)
-    sep = "-" * n_sep
-
-    if pre_ln:
-        print("")
-
-    print(template.format(t=title, s=sep))
-
-    if post_ln:
-        print("")
-
-
-################################################################################
-def _is_required(item: str, check_func: Callable[[str], bool | str | None], item_type: str, info: str = ""):
-    info = f" {info}" if info else ""
-    if not check_func(item):
-        error_exit(f"{item_type.capitalize()} '{item}' is required.{info}")
-    print(f"@ Found: {item}")
-
-
-################################################################################
-def command_required(cmd: str, info: str = ""):
-    _is_required(cmd, shutil.which, "Command", info)
-
-
-################################################################################
-def file_required(path: str, info: str = ""):
-    _is_required(path, os.path.isfile, "File", info)
-
-
-################################################################################
-def folder_required(path: str, info: str = ""):
-    _is_required(path, os.path.isdir, "Folder", info)
-
-
-################################################################################
-def error_exit(message: str, exception=None, traceback_on_fail: bool = True) -> NoReturn:
-    sep = "\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n"
-
-    exception_err = f" | {type(exception)}\n{str(exception)}" if exception else ""
-    err = f"{sep}@ ERROR | {message}{exception_err}"
-
-    print(err, file=sys.stderr)
-
-    if exception and traceback_on_fail:
-        t_sep = "\n\nttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n\n"
-        print(f"{t_sep}{traceback.format_exc()}", file=sys.stderr)
-
-    print()
-    sys.exit(1)
-
-
-################################################################################
-def is_binary_file(file_path, chunk_size=1024, null_byte_threshold=0.1):
-    if not os.path.exists(file_path):
-        return False
-
-    try:
-        with open(file_path, "rb") as f:
-            chunk = f.read(chunk_size)
-    except IOError:
-        return False
-
-    null_count = chunk.count(b"\x00")
-    if null_count / len(chunk) > null_byte_threshold:
-        return True
-
-
-################################################################################
 def main():
+    y.setup()
 
     ############################################################################
     # Args
@@ -128,10 +37,10 @@ def main():
     ############################################################################
     # Check required commands
 
-    command_required("cmake")
+    y.required_command("cmake")
 
     if cmake_gen == "Ninja":
-        command_required("ninja")
+        y.required_command("ninja")
 
     ############################################################################
     # PreBuild Cleanup
@@ -147,21 +56,28 @@ def main():
     ############################################################################
     # Config + Build
 
-    print(f"\n\n# CONFIG\n")
-    print_deco(None)
-    config_cmd = ["cmake", "-G", cmake_gen, "../..", f"-DCMAKE_BUILD_TYPE={build_type}", "-DCMAKE_POLICY_VERSION_MINIMUM=3.10"]
-    subprocess.run(config_cmd, check=True, cwd=sub_build_dir)
-    print_deco(None)
+    y.log_trace(f"CONFIG")
+    y.log_fancy(None)
+    config_cmd = [
+        "cmake",
+        "-G",
+        cmake_gen,
+        "../..",
+        f"-DCMAKE_BUILD_TYPE={build_type}",
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.10",
+    ]
+    y.run_command(config_cmd, cwd=sub_build_dir)
+    y.log_fancy(None)
 
-    print(f"\n\n# BUILD\n")
+    y.log_trace(f"BUILD")
     build_cmd = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
-    subprocess.run(build_cmd, check=True, cwd=sub_build_dir)
+    y.run_command(build_cmd, cwd=sub_build_dir)
 
     ############################################################################
     # Tests
 
     if args.tests:
-        print(f"\n\n# TESTs")
+        y.log_trace(f"TESTs")
         tests_dir = os.path.abspath(f"{BUILD_DIR}/tests")
 
         tests_total = 0
@@ -173,36 +89,29 @@ def main():
                 for filename in files:
                     filepath = os.path.join(root, filename)
 
-                    if is_binary_file(filepath):
+                    if y.file_is_binary(filepath):
                         tests_total += 1
 
-                        print_deco(filename, pre_ln=True)
+                        y.log_fancy(filename, pre_ln=True)
 
-                        p = subprocess.run([filepath], capture_output=True)
+                        p = y.run_command([filepath], permissive=True, verbosity=0, is_external=True)
+                        if p.stdout:
+                            y.log_info(f"\n{p.stdout}", "")
                         ok = not p.returncode
 
                         tests_passed += int(ok)
 
                         mark = "🟢" if ok else "🔴"
                         status = "PASS" if ok else "FAIL"
-                        print_deco(f"{status}  {mark} ", align_right=True, sep_offset=1)
+                        y.log_fancy(f"{status}  {mark} ", align_right=True, sep_offset=1)
 
         ok = tests_passed == tests_total
 
         mark = "✅️" if ok else "⛔️"
         status = "PASS" if ok else "FAIL"
-        print(f"\n-- Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
-
-    ############################################################################
+        y.log_info("", "")
+        y.log_info(f"Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
 
 
 ################################################################################
-if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        error_exit("User interrupts execution")
-    except PermissionError as e:
-        error_exit("Files in use / Folder not found", e)
-    except Exception as e:
-        error_exit(f"Unexpected", e)
+y.entrypoint(main)
