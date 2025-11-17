@@ -166,7 +166,7 @@ def run_command(
     if verbosity > 0:
         log_trace(cmd_str)
 
-    if is_external:
+    if is_external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
         cmd = ["stdbuf", "-oL"] + cmd
 
     process = subprocess.Popen(

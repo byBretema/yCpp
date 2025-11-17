@@ -4,9 +4,9 @@
 
 #     On parent/top (or project) CMake
 
-#         y_add_library( "fmt"       "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" [ON|OFF])
-#         y_add_library( "glm"      "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             [ON|OFF])
-#         y_add_library( "argparse" "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        [ON|OFF])
+#         y_add_library( "fmt"       "11.1.4" "https://github.com/fmtlib/fmt/releases/download/11.1.4/fmt-11.1.4.zip" ON|OFF)
+#         y_add_library( "glm"      "1.0.1"   "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"             ON|OFF)
+#         y_add_library( "argparse" "3.2"     "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"        ON|OFF)
 
 #         This will populate the ./build/deps dir with given dependencies.
 #         The last arg is allow_system.
@@ -45,6 +45,26 @@ set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/build/deps)
 set(y_meta_libs "" CACHE INTERNAL "")
 
 set(__y_sep "❱---------------------------------------------------------------------------❰" CACHE INTERNAL "")
+
+
+################################################################################
+## Top setup !
+
+macro(y_set_defaults cxx_standard)
+
+    if(NOT CMAKE_BUILD_TYPE)
+        set(CMAKE_BUILD_TYPE Debug)
+    endif()
+
+    set(CMAKE_CXX_STANDARD ${cxx_standard})
+    set(CMAKE_CXX_EXTENSIONS OFF)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    if(IS_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
+        include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/vendor")
+    endif()
+
+endmacro()
 
 
 ################################################################################
@@ -100,7 +120,7 @@ function(y_link_libraries proj_name)
 function(y_set_output_dir proj_name dir_name)
 
     if (NOT MSVC)
-    set(_build_type_dir ${CMAKE_BUILD_TYPE})
+       set(_build_type_dir ${CMAKE_BUILD_TYPE})
     else()
         set(_build_type_dir "")
     endif()
@@ -153,7 +173,8 @@ function(y_add_exe proj_name proj_root_dir)
 
     y_glob(${proj_root_dir} _sources _headers)
 
-    message(DEBUG "[y] · ${proj_name}")
+    message(STATUS "[y] · Project: ${proj_name}")
+
     message(DEBUG "  -- ${proj_root_dir}")
     message(DEBUG "  -- Sources:")
     foreach(_source IN LISTS _sources)
@@ -170,30 +191,10 @@ endfunction()
 
 
 ################################################################################
-## Top setup !
-
-macro(y_set_defaults cxx_standard)
-
-    if(NOT CMAKE_BUILD_TYPE)
-        set(CMAKE_BUILD_TYPE Debug)
-    endif()
-
-    set(CMAKE_CXX_STANDARD ${cxx_standard})
-    set(CMAKE_CXX_EXTENSIONS OFF)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-    if(IS_DIRECTORY "${PROJECT_SOURCE_DIR}/vendor")
-        include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/vendor")
-    endif()
-
-endmacro()
-
-
-################################################################################
 ## Target setup !
 
 function(y_setup_exe_project)
-    cmake_parse_arguments(_args_ "link_libraries" "" "" ${ARGN})
+    list(POP_FRONT ARGN ARGS_LinkLibs)
 
     get_filename_component(_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
     project(${_name})
@@ -216,7 +217,7 @@ function(y_setup_exe_project)
     target_include_directories(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR})
 
     # Dependencies
-    if (${_args__link_libraries})
+    if (ARGS_LinkLibs)
         y_link_libraries(${PROJECT_NAME})
     endif()
 
@@ -256,7 +257,7 @@ function(y_auto_projects)
 
     # Add subdirs
     foreach(_dir ${_found_dirs})
-        message(STATUS "[y] · Project : ${_dir}")
+        # message(STATUS "[y] · Project : ${_dir}")
         add_subdirectory("${_dir}")
         message(STATUS ${__y_sep})
     endforeach()
@@ -285,7 +286,7 @@ function(y_enable_tests)
 
         add_test(NAME "${_name}" COMMAND "${_name}")
 
-        message(STATUS "[y] · Test : '${_name}' from '${_source}'")
+        message(STATUS "[y] · Test : ${_name} -- ${_source}")
 
     endforeach()
     message(STATUS ${__y_sep})

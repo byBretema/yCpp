@@ -158,37 +158,37 @@
 
 //--- Flow ---------------------------------------------------------------------
 
-#define y_or_return(cond, ret_val)                                                                 \
-    if (!(cond)) {                                                                                 \
-        return ret_val;                                                                            \
+#define y_or_return(cond, ret_val)                                                                                     \
+    if (!(cond)) {                                                                                                     \
+        return ret_val;                                                                                                \
     }
 
 //--- Class helpers ------------------------------------------------------------
 
-#define y_class_nocopy(T)                                                                          \
-public:                                                                                            \
-    T(T const &) = delete;                                                                         \
+#define y_class_nocopy(T)                                                                                              \
+public:                                                                                                                \
+    T(T const &) = delete;                                                                                             \
     T &operator=(T const &) = delete;
 
-#define y_class_nomove(T)                                                                          \
-public:                                                                                            \
-    T(T &&) noexcept = delete;                                                                     \
+#define y_class_nomove(T)                                                                                              \
+public:                                                                                                                \
+    T(T &&) noexcept = delete;                                                                                         \
     T &operator=(T &&) noexcept = delete;
 
 #define y_class_nocopynomove(T) y_class_nocopy(T) y_class_nomove(T)
 
-#define y_class_move(T, move_code)                                                                 \
-public:                                                                                            \
-    T(T &&rhs_) noexcept { *this = std::move(rhs_); }                                              \
-    T &operator=(T &&rhs_) noexcept {                                                              \
-        swap(*this, rhs_);                                                                         \
-        return *this;                                                                              \
-    }                                                                                              \
-    friend void swap(T &lhs, T &rhs) noexcept {                                                    \
-        if (&lhs == &rhs)                                                                          \
-            return;                                                                                \
-        using std::swap;                                                                           \
-        (move_code);                                                                               \
+#define y_class_move(T, move_code)                                                                                     \
+public:                                                                                                                \
+    T(T &&rhs_) noexcept { *this = std::move(rhs_); }                                                                  \
+    T &operator=(T &&rhs_) noexcept {                                                                                  \
+        swap(*this, rhs_);                                                                                             \
+        return *this;                                                                                                  \
+    }                                                                                                                  \
+    friend void swap(T &lhs, T &rhs) noexcept {                                                                        \
+        if (&lhs == &rhs)                                                                                              \
+            return;                                                                                                    \
+        using std::swap;                                                                                               \
+        (move_code);                                                                                                   \
     }
 
 //--- Concat -------------------------------------------------------------------
@@ -558,13 +558,10 @@ std::string y_fmt(std::string_view msg, Args... args) {
 #define __yPrintInfo() ""
 #endif
 
-#define y_info(msg, ...)                                                                           \
-    __yPrinter(y_fmt("{}{}\n", __yLogInfo("INFO"), y_fmt((msg), ##__VA_ARGS__)))
-#define y_warn(msg, ...)                                                                           \
-    __yPrinter(y_fmt("{}{}\n", __yLogInfo("WARN"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_info(msg, ...) __yPrinter(y_fmt("{}{}\n", __yLogInfo("INFO"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_warn(msg, ...) __yPrinter(y_fmt("{}{}\n", __yLogInfo("WARN"), y_fmt((msg), ##__VA_ARGS__)))
 #define y_err(msg, ...) __yPrinter(y_fmt("{}{}\n", __yLogInfo("ERRO"), y_fmt((msg), ##__VA_ARGS__)))
-#define y_debug(msg, ...)                                                                          \
-    __yPrinter(y_fmt("{}{}\n", __yLogInfo("DEBG"), y_fmt((msg), ##__VA_ARGS__)))
+#define y_debug(msg, ...) __yPrinter(y_fmt("{}{}\n", __yLogInfo("DEBG"), y_fmt((msg), ##__VA_ARGS__)))
 #define y_println(msg, ...) __yPrinter(y_fmt("{}{}\n", __yPrintInfo(), y_fmt((msg), ##__VA_ARGS__)))
 #define y_print(msg, ...) __yPrinter(y_fmt("{}{}", __yPrintInfo(), y_fmt((msg), ##__VA_ARGS__)))
 
@@ -633,9 +630,7 @@ private:
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 template <typename F, typename T>
 auto bind(F &&fn, T *obj) {
-    return [obj, fn](auto &&...args) -> decltype(auto) {
-        return (obj->*fn)(std::forward<decltype(args)>(args)...);
-    };
+    return [obj, fn](auto &&...args) -> decltype(auto) { return (obj->*fn)(std::forward<decltype(args)>(args)...); };
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 [[nodiscard]] constexpr inline usize bit(usize n) { return (1 << n); }
@@ -766,9 +761,7 @@ using ETimer = ElapsedTimer;
     return str;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-[[nodiscard]] inline b8 str_contains(StrView str, StrView substr) {
-    return str.find(substr) != std::string::npos;
-}
+[[nodiscard]] inline b8 str_contains(StrView str, StrView substr) { return str.find(substr) != std::string::npos; }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 [[nodiscard]] Vec<Str> str_split(StrView str, StrView delim) {
     if (delim.empty()) {
@@ -805,8 +798,7 @@ using ETimer = ElapsedTimer;
     return s;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-[[nodiscard]] Str str_replace(Str str, Str const &from, Str const &to,
-                              b8 only_first_match = false) {
+[[nodiscard]] Str str_replace(Str str, Str const &from, Str const &to, b8 only_first_match = false) {
     usize pos = 0;
     while ((pos = str.find(from)) < str.size()) {
         str.replace(pos, from.length(), to);
@@ -822,7 +814,7 @@ using ETimer = ElapsedTimer;
     b8 const same_size = from.size() == to.size();
     b8 const is_empty = same_size && from.size() < 1;
     if (!same_size || is_empty) {
-        y_warn("str_replace_many - {}", "Bad sizes. Returned original str");
+        // y_warn("str_replace_many - {}", Str("Bad sizes. Returned original str"));
         return str;
     }
 
@@ -912,7 +904,7 @@ using ETimer = ElapsedTimer;
     y_defer(file.close());
 
     if (!file.is_open()) {
-        y_warn("[file_read] Opening file: {}. Returned empty str.", input_file);
+        // y_warn("[file_read] Opening file: {}. Returned empty str.", input_file);
         return "";
     }
 
@@ -924,8 +916,7 @@ using ETimer = ElapsedTimer;
     return content;
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-b8 file_write(Str const &output_file, char const *data, usize data_size,
-              std::ios_base::openmode mode) {
+b8 file_write(Str const &output_file, char const *data, usize data_size, std::ios_base::openmode mode) {
 
     if (!data || data_size < 1) {
         return false;
