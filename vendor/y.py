@@ -152,7 +152,14 @@ def log_fancy(
 
 
 ################################################################################
-def run_command(
+class RunCmdInfo():
+    def __init__(self, returncode:int=-1, stdout:str=""):
+        self.returncode: int = returncode
+        self.stdout: str = stdout
+
+
+################################################################################
+def run_cmd(
     cmd: list[str],
     cwd: str | None = None,
     shell: bool = False,
@@ -160,14 +167,14 @@ def run_command(
     verbosity: int = 2,
     permissive: bool = False,
     is_external: bool = False,
-):
-    cmd_str = " ".join(cmd)
+) -> RunCmdInfo :
+    cmd_str: str = " ".join(cmd)
     cmd_str += "" if not cwd else f"  (at {cwd})"
     if verbosity > 0:
         log_trace(cmd_str)
 
     if is_external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
-        cmd = ["stdbuf", "-oL"] + cmd
+        cmd: list[str] = ["stdbuf", "-oL"] + cmd
 
     process = subprocess.Popen(
         cmd,
@@ -180,7 +187,7 @@ def run_command(
         env=os.environ.copy(),
     )
 
-    stdout = ""
+    stdout: str = ""
 
     if process.stdout:
         _tee = tee_new(PROCESS_FILEPATH, PROCESS_TH, PROCESS_CB)
@@ -193,7 +200,7 @@ def run_command(
 
     returncode = process.wait()
     if returncode:
-        output = f"\n{stdout}" if stdout and verbosity < 2 else ""
+        output:str = f"\n{stdout}" if stdout and verbosity < 2 else ""
         err_info = f"{err_info}. " if err_info else ""
         err_info = f"{err_info}Command failed with return code: {returncode}{output}"
         if not permissive:
@@ -201,8 +208,7 @@ def run_command(
         elif verbosity > 1:
             log_info(err_info)
 
-    RunCmdResult = namedtuple("RunCmdResult", "stdout returncode")
-    return RunCmdResult(stdout, returncode)
+    return RunCmdInfo(returncode=returncode, stdout=stdout)
 
 
 # --- Check required helpers ---

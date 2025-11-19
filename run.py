@@ -7,8 +7,8 @@ import argparse
 import vendor.y as y
 
 
-BUILD_DIR = "build"
-TESTS_DIR = "tests"
+BUILD_DIR: str = "build"
+TESTS_DIR: str = "tests"
 
 
 def main():
@@ -30,9 +30,9 @@ def main():
     ############################################################################
     # Variables
 
-    build_type = "Release" if args.release else "Debug"
-    sub_build_dir = f"{BUILD_DIR}/project"
-    cmake_gen = args.cmakegen
+    build_type: str = "Release" if args.release else "Debug"
+    sub_build_dir: str  = f"{BUILD_DIR}/project"
+    cmake_gen: str = args.cmakegen
 
     ############################################################################
     # Check required commands
@@ -58,7 +58,7 @@ def main():
 
     y.log_trace(f"CONFIG")
     y.log_fancy(None)
-    config_cmd = [
+    config_cmd: list[str] = [
         "cmake",
         "-G",
         cmake_gen,
@@ -66,49 +66,51 @@ def main():
         f"-DCMAKE_BUILD_TYPE={build_type}",
         "-DCMAKE_POLICY_VERSION_MINIMUM=3.10",
     ]
-    y.run_command(config_cmd, cwd=sub_build_dir)
+    y.run_cmd(config_cmd, cwd=sub_build_dir)
     y.log_fancy(None)
 
     y.log_trace(f"BUILD")
-    build_cmd = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
-    y.run_command(build_cmd, cwd=sub_build_dir)
+    build_cmd: list[str] = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
+    y.run_cmd(build_cmd, cwd=sub_build_dir)
 
     ############################################################################
     # Tests
 
     if args.tests:
         y.log_trace(f"TESTs")
-        tests_dir = os.path.abspath(f"{BUILD_DIR}/tests")
+        tests_dir: str = os.path.abspath(f"{BUILD_DIR}/tests")
 
-        tests_total = 0
-        tests_passed = 0
+        tests_total: int = 0
+        tests_passed: int = 0
 
         if os.path.isdir(tests_dir):
 
             for root, _, files in os.walk(tests_dir):
                 for filename in files:
-                    filepath = os.path.join(root, filename)
+                    filepath: str = os.path.join(root, filename)
 
                     if y.file_is_binary(filepath):
                         tests_total += 1
 
                         y.log_fancy(filename, pre_ln=True)
 
-                        p = y.run_command([filepath], permissive=True, verbosity=0, is_external=True)
+                        p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, is_external=True)
+
                         if p.stdout:
                             y.log_info(f"\n{p.stdout}", "")
-                        ok = not p.returncode
+
+                        ok: bool = not p.returncode
 
                         tests_passed += int(ok)
 
-                        mark = "🟢" if ok else "🔴"
-                        status = "PASS" if ok else "FAIL"
+                        mark: str = "🟢" if ok else "🔴"
+                        status: str = "PASS" if ok else "FAIL"
                         y.log_fancy(f"{status}  {mark} ", align_right=True, sep_offset=1)
 
-        ok = tests_passed == tests_total
+        ok: bool = tests_passed == tests_total
 
-        mark = "✅️" if ok else "⛔️"
-        status = "PASS" if ok else "FAIL"
+        mark: str = "✅️" if ok else "⛔️"
+        status: str = "PASS" if ok else "FAIL"
         y.log_info("", "")
         y.log_info(f"Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
 

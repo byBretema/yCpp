@@ -1054,7 +1054,7 @@ public:
     //--------------------------------------------------------------------------
     void show_results() {
         bool const done = m_pass_count == m_total_count;
-        y_println("");
+        // y_println("");
 
         if (m_pass_count and not done)
             y_println("✅ PASS  |  {} / {}", m_pass_count, m_total_count);
@@ -1062,8 +1062,8 @@ public:
         if (m_fail_count)
             y_println("❌ FAIL  |  {} / {}", m_fail_count, m_total_count);
 
-        if (done)
-            y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
+        // if (done)
+        //     y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
     }
     //--------------------------------------------------------------------------
     i32 cli_result() { return m_pass_count == m_total_count ? 0 : -1; }

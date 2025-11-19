@@ -216,9 +216,9 @@ int main() {
 
     T.make_section("Files Ops");
     {
-        auto constexpr s_write_bin { "./output/to_file_write.bin" };
-        auto constexpr s_append_txt { "./output/to_file_append.txt" };
-        auto constexpr s_read_txt { "./input/to_file_read.txt" };
+        auto constexpr s_write_bin { "./tests/output/to_file_write.bin" };
+        auto constexpr s_append_txt { "./tests/output/to_file_append.txt" };
+        auto constexpr s_read_txt { "./tests/input/to_file_read.txt" };
 
         {
             Str const content = y::file_read(s_read_txt);
