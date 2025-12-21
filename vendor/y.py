@@ -152,8 +152,8 @@ def log_fancy(
 
 
 ################################################################################
-class RunCmdInfo():
-    def __init__(self, returncode:int=-1, stdout:str=""):
+class RunCmdInfo:
+    def __init__(self, returncode: int = -1, stdout: str = ""):
         self.returncode: int = returncode
         self.stdout: str = stdout
 
@@ -167,14 +167,14 @@ def run_cmd(
     verbosity: int = 2,
     permissive: bool = False,
     is_external: bool = False,
-) -> RunCmdInfo :
+) -> RunCmdInfo:
     cmd_str: str = " ".join(cmd)
     cmd_str += "" if not cwd else f"  (at {cwd})"
     if verbosity > 0:
         log_trace(cmd_str)
 
     if is_external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
-        cmd: list[str] = ["stdbuf", "-oL"] + cmd
+        cmd = ["stdbuf", "-oL"] + cmd
 
     process = subprocess.Popen(
         cmd,
@@ -200,7 +200,7 @@ def run_cmd(
 
     returncode = process.wait()
     if returncode:
-        output:str = f"\n{stdout}" if stdout and verbosity < 2 else ""
+        output: str = f"\n{stdout}" if stdout and verbosity < 2 else ""
         err_info = f"{err_info}. " if err_info else ""
         err_info = f"{err_info}Command failed with return code: {returncode}{output}"
         if not permissive:
@@ -406,7 +406,7 @@ def os_glob(
 def zip_it(dst: str, src: str):
     cmd = ["7z", "a", "-tzip", "-bso0", "-bsp0", "-bse1"]
     os.makedirs(os.path.dirname(dst), exist_ok=True)
-    run_command([*cmd, dst, src], verbosity=1)
+    run_cmd([*cmd, dst, src], verbosity=1)
 
 
 # --- AWS ---
@@ -421,7 +421,7 @@ def aws_copy_file(filepath: str, aws_filepath: str, content_type: str | None = N
         cmd.insert(5, content_type)
         cmd.insert(5, "--content-type")
 
-    run_command(cmd, verbosity=0, err_info=f"Could not update {filepath} to AWS", permissive=True)
+    run_cmd(cmd, verbosity=0, err_info=f"Could not update {filepath} to AWS", permissive=True)
 
 
 ################################################################################
@@ -452,7 +452,7 @@ def aws_auth(pem_filepath: str, key_filepath: str, trust_arn: str, profile_arn: 
         "--role-arn",
         role_arn,
     ]
-    aws_auth_output: str = run_command(aws_auth_cmd, verbosity=0).stdout
+    aws_auth_output: str = run_cmd(aws_auth_cmd, verbosity=0).stdout
     aws_auth: dict = json.loads(aws_auth_output)
 
     for key in ["AccessKeyId", "SecretAccessKey", "SessionToken"]:
