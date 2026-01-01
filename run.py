@@ -7,19 +7,32 @@ import argparse
 import vendor.y as y
 
 
+# - - - - - - - - - - - - - - - - Globals  - - - - - - - - - - - - - - - - - - #
+
+
 BUILD_DIR: str = "build"
 TESTS_DIR: str = "tests"
 
 
+# - - - - - - - - - - - - - - - - - Main - - - - - - - - - - - - - - - - - - - #
+
+
+def title(msg):
+    y.log_info("", "")
+    y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=True, post_ln=True, sep="#")
+
+
 def main():
-    y.setup()
+    y.setup(show_traceback=True)
 
     ############################################################################
-    # Args
+    ##                               Args                                     ##
+    ############################################################################
 
     parser = argparse.ArgumentParser(description="Build script")
 
     parser.add_argument("-t", "--tests", action="store_true", help="Run project tests")
+    parser.add_argument("-b", "--build", action="store_true", help="Run config/build step")
     parser.add_argument("-c", "--cleanup", action="store_true", help="Cleanup sub-build directory")
     parser.add_argument("-C", "--fullcleanup", action="store_true", help="Cleanup build directory")
     parser.add_argument("-r", "--release", action="store_true", help="Build in Release mode")
@@ -28,14 +41,16 @@ def main():
     args = parser.parse_args()
 
     ############################################################################
-    # Variables
+    ##                               Vars                                     ##
+    ############################################################################
 
     build_type: str = "Release" if args.release else "Debug"
-    sub_build_dir: str  = f"{BUILD_DIR}/project"
+    sub_build_dir: str = f"{BUILD_DIR}/project"
     cmake_gen: str = args.cmakegen
 
     ############################################################################
-    # Check required commands
+    ##                             Required                                   ##
+    ############################################################################
 
     y.required_command("cmake")
 
@@ -43,7 +58,8 @@ def main():
         y.required_command("ninja")
 
     ############################################################################
-    # PreBuild Cleanup
+    ##                             Cleanup                                    ##
+    ############################################################################
 
     if args.fullcleanup and os.path.isdir(BUILD_DIR):
         shutil.rmtree(BUILD_DIR)
@@ -54,30 +70,44 @@ def main():
     os.makedirs(sub_build_dir, exist_ok=True)
 
     ############################################################################
-    # Config + Build
+    ##                          Config + Build                                ##
+    ############################################################################
 
-    y.log_trace(f"CONFIG")
-    y.log_fancy(None)
-    config_cmd: list[str] = [
-        "cmake",
-        "-G",
-        cmake_gen,
-        "../..",
-        f"-DCMAKE_BUILD_TYPE={build_type}",
-        "-DCMAKE_POLICY_VERSION_MINIMUM=3.10",
-    ]
-    y.run_cmd(config_cmd, cwd=sub_build_dir)
-    y.log_fancy(None)
+    if args.build:
 
-    y.log_trace(f"BUILD")
-    build_cmd: list[str] = ["cmake", "--build", ".", "-j", str(os.cpu_count()), "--config", build_type]
-    y.run_cmd(build_cmd, cwd=sub_build_dir)
+        title("CONFIG")
+
+        config_cmd: list[str] = [
+            "cmake",
+            "-G",
+            cmake_gen,
+            "../..",
+            f"-DCMAKE_BUILD_TYPE={build_type}",
+            "-DCMAKE_POLICY_VERSION_MINIMUM=3.10",
+        ]
+        y.run_cmd(config_cmd, cwd=sub_build_dir)
+
+        title("BUILD")
+
+        build_cmd: list[str] = [
+            "cmake",
+            "--build",
+            ".",
+            "-j",
+            str(os.cpu_count()),
+            "--config",
+            build_type,
+        ]
+
+        y.run_cmd(build_cmd, cwd=sub_build_dir)
 
     ############################################################################
-    # Tests
+    ##                              Tests                                     ##
+    ############################################################################
 
     if args.tests:
-        y.log_trace(f"TESTs")
+
+        title("TESTs")
         tests_dir: str = os.path.abspath(f"{BUILD_DIR}/tests")
 
         tests_total: int = 0
@@ -92,7 +122,7 @@ def main():
                     if y.file_is_binary(filepath):
                         tests_total += 1
 
-                        y.log_fancy(filename, pre_ln=True)
+                        y.log_fancy(filename, pre_ln=True, align=y.FancyAlign.Left, sep=" ", margin=1)
 
                         p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, is_external=True)
 
@@ -105,7 +135,7 @@ def main():
 
                         mark: str = "🟢" if ok else "🔴"
                         status: str = "PASS" if ok else "FAIL"
-                        y.log_fancy(f"{status}  {mark} ", align_right=True, sep_offset=1)
+                        y.log_fancy(f"{status} {mark}", align=y.FancyAlign.Right, sep=" ", margin=1)
 
         ok: bool = tests_passed == tests_total
 
@@ -115,5 +145,5 @@ def main():
         y.log_info(f"Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
 
 
-################################################################################
+# - - - - - - - - - - - - - - - Entrypoint - - - - - - - - - - - - - - - - - - #
 y.entrypoint(main)

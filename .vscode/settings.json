@@ -94,7 +94,8 @@
         "streambuf": "cpp",
         "thread": "cpp",
         "typeindex": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "cassert": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "editor.formatOnSave": true,

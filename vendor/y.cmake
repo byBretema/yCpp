@@ -64,6 +64,8 @@ macro(y_set_defaults cxx_standard)
         include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/vendor")
     endif()
 
+    message("")
+
 endmacro()
 
 
@@ -88,7 +90,7 @@ function(y_add_library lib_name lib_version lib_url allow_system)
     string(STRIP ${_libs_aux} _libs_clean)
     set(y_meta_libs "${_libs_clean}" CACHE INTERNAL "")
 
-    message(STATUS ${__y_sep})
+    message("")
 
 endfunction()
 
@@ -259,7 +261,7 @@ function(y_auto_projects)
     foreach(_dir ${_found_dirs})
         # message(STATUS "[y] · Project : ${_dir}")
         add_subdirectory("${_dir}")
-        message(STATUS ${__y_sep})
+        message("")
     endforeach()
 
 endfunction()
@@ -289,7 +291,7 @@ function(y_enable_tests)
         message(STATUS "[y] · Test : ${_name} -- ${_source}")
 
     endforeach()
-    message(STATUS ${__y_sep})
+    message("")
 
 endfunction()
 

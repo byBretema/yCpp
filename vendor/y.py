@@ -11,154 +11,162 @@ import json
 import traceback
 from collections import namedtuple
 import enum
+import unicodedata
 
 
-# --- Globals ---
+# - - - - - - - - - - - - - - - -  Globals - - - - - - - - - - - - - - - - - - #
 
-
-################################################################################
 EXIT_CB: Callable | None = None
 TRACE_CB: Callable | None = None
 PROCESS_CB: Callable | None = None
 PROCESS_TH: int = 10
 PROCESS_FILEPATH: str | None = None
+SHOW_TRACEBACK: bool = False
 
 
-# --- Logger ---
+# - - - - - - - - - - - - - - - - - Logger - - - - - - - - - - - - - - - - - - #
 
-################################################################################
 __GLOBAL_TEE: Generator[None, str, None] | None = None
 __GLOBAL_TEE_WITH_CALLBACK: Generator[None, str, None] | None = None
 
 
-################################################################################
 def tee(msg: str, run_cb: bool = False):
-    tee_ = __GLOBAL_TEE_WITH_CALLBACK if run_cb else __GLOBAL_TEE
-    if tee_:
-        tee_.send(msg)
+    target_tee = __GLOBAL_TEE_WITH_CALLBACK if run_cb else __GLOBAL_TEE
+    if target_tee:
+        target_tee.send(msg)
 
 
-################################################################################
-def __tee_generator(
+def tee_make(
     log_filepath: str | None = None,
     log_threshold: int = 1,
-    closure: Callable | None = None,
+    closure: Callable[[str], None] | None = None,
 ) -> Generator[None, str, None]:
 
-    count: int = 0
-    partial: str = ""
-    log_threshold = 1 if log_threshold < 1 else log_threshold
+    def _worker():
+        count: int = 0
+        partial: str = ""
 
-    if log_filepath and not os.path.isfile(log_filepath):
-        raise Exception("LogFile not found")
+        effective_threshold = 1 if log_threshold < 1 else log_threshold
 
-    try:
-        while True:
-            # Blokcs till Generator.send("your-message")
-            line = yield
-            # Line has been received, do the 'tee'
-            if line:
-                sys.stdout.write(line)
-                sys.stdout.flush()
-                count += 1
-                partial += line
-                if log_filepath:
-                    with open(log_filepath, "a") as file:
-                        file.write(line)
-            # Threshold reached, trigger closure
-            if count >= log_threshold:
-                if partial and closure:
-                    closure(partial)
-                count = 0
-                partial = ""
+        if log_filepath and not os.path.isfile(log_filepath):
+            raise Exception("LogFile not found")
 
-    # This gets triggered calling Generator.close()
-    finally:
-        if partial and closure:
-            closure(partial)
+        try:
+            while True:
+                line = yield
 
+                if line:
+                    sys.stdout.write(line)
+                    sys.stdout.flush()
+                    count += 1
+                    partial += line
 
-################################################################################
-def tee_new(log_filepath: str | None = None, log_threshold: int = 1, closure: Callable | None = None):
-    t = __tee_generator(log_filepath, log_threshold, closure)
+                    if log_filepath:
+                        with open(log_filepath, "a") as file:
+                            file.write(line)
+
+                if count >= effective_threshold:
+                    if partial and closure:
+                        closure(partial)
+                    count = 0
+                    partial = ""
+
+        finally:
+            if partial and closure:
+                closure(partial)
+
+    t = _worker()
     next(t)
     return t
 
 
-################################################################################
-def log_error(message: str, exception=None, traceback_on_fail: bool = True) -> None | NoReturn:
+def _log_error(message: str, exception=None, abort: bool = True) -> None | NoReturn:
 
-    e_sep = "\n\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n"
     exception_err = f" | {type(exception)}\n{str(exception)}" if exception else ""
-    err = f"{e_sep}@ ERROR | {message}{exception_err}"
+    err = f"\n\n@ ERROR | {message}{exception_err}\n"
 
     tee(err)
 
     if EXIT_CB:
         EXIT_CB(err)
 
-    if exception and traceback_on_fail:
-        t_sep = "\n\nttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n\n"
-        tee(f"{t_sep}{traceback.format_exc()}")
+    if SHOW_TRACEBACK:
+        tee(f"\n{traceback.format_exc()}")
 
     tee("")
-    if exit:
+    if abort:
         sys.exit(1)
     else:
         tee("- - - - - Execution will continue below - - - - -\n")
 
 
-################################################################################
-def log_trace(msg: str, publish: bool = True):
-    tee(f"\n@ {msg}\n\n")
+def error_exit(msg: str, exception=None):
+    _log_error(msg, exception, abort=True)
 
 
-################################################################################
+def log_error(msg: str, exception=None):
+    _log_error(msg, exception, abort=False)
+
+
 def log_info(msg: str, prefix="-- "):
     tee(f"{prefix}{msg}\n")
 
 
-################################################################################
+class FancyAlign(enum.Enum):
+    Left = enum.auto()
+    Center = enum.auto()
+    Right = enum.auto()
+
+
 def log_fancy(
     title: str | None,
     pre_ln: bool = False,
     post_ln: bool = False,
-    align_right: bool = False,
-    sep_offset: int = 0,  # len() could miss-count when the string contains emojis
+    align: FancyAlign = FancyAlign.Center,
+    sep: str = "-",
+    margin: int = 3,
 ):
 
-    template = "-- ❱{t}{s}❰"
-    if title:
-        template = "-- ❱ {t} ❰{s}❰"
-        if align_right:
-            template = "-- ❱{s}❱ {t} ❰"
-    else:
-        title = ""
+    template = "· {sl}{t}{sr} ·"
+    title = f" {title} " if title else ""
 
-    template_with_title = template.format(t=title, s="")
-    n_sep = max(80 - len(template_with_title) - sep_offset, 0)
-    sep = "-" * n_sep
+    deco = sep * margin
+    column_max = 80
+
+    template_with_title = template.format(sl="", t=title, sr="")
+    n_sep = max(column_max - emoji_str_len(template_with_title), 0)
+
+    sep_l = ""
+    sep_r = ""
+    if align == FancyAlign.Center:
+        n_sep = n_sep // 2
+        sep_l = sep * (n_sep + int(n_sep % 2 == 0))
+        sep_r = sep * (n_sep)
+    elif align == FancyAlign.Right:
+        sep_l = sep * (n_sep - emoji_str_len(deco))
+        sep_r = deco
+    elif align == FancyAlign.Left:
+        sep_l = deco
+        sep_r = sep * (n_sep - emoji_str_len(deco))
 
     if pre_ln:
-        print("")
+        print(f"{'\n'*pre_ln}", end=None)
 
-    print(template.format(t=title, s=sep))
+    print(template.format(sl=sep_l, t=title, sr=sep_r))
 
     if post_ln:
-        print("")
+        print(f"{'\n'*post_ln}", end=None)
 
 
-# --- Run Command ---
+# - - - - - - - - - - - - - - -  Run Command - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 class RunCmdInfo:
     def __init__(self, returncode: int = -1, stdout: str = ""):
         self.returncode: int = returncode
         self.stdout: str = stdout
 
 
-################################################################################
 def run_cmd(
     cmd: list[str],
     cwd: str | None = None,
@@ -168,10 +176,11 @@ def run_cmd(
     permissive: bool = False,
     is_external: bool = False,
 ) -> RunCmdInfo:
+
     cmd_str: str = " ".join(cmd)
     cmd_str += "" if not cwd else f"  (at {cwd})"
     if verbosity > 0:
-        log_trace(cmd_str)
+        log_info(cmd_str, prefix="@ ")
 
     if is_external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
         cmd = ["stdbuf", "-oL"] + cmd
@@ -190,7 +199,7 @@ def run_cmd(
     stdout: str = ""
 
     if process.stdout:
-        _tee = tee_new(PROCESS_FILEPATH, PROCESS_TH, PROCESS_CB)
+        _tee = tee_make(PROCESS_FILEPATH, PROCESS_TH, PROCESS_CB)
         for line in iter(process.stdout.readline, ""):
             stdout += line
             if verbosity > 1:
@@ -204,44 +213,39 @@ def run_cmd(
         err_info = f"{err_info}. " if err_info else ""
         err_info = f"{err_info}Command failed with return code: {returncode}{output}"
         if not permissive:
-            log_error(err_info)
+            error_exit(err_info)
         elif verbosity > 1:
             log_info(err_info)
 
     return RunCmdInfo(returncode=returncode, stdout=stdout)
 
 
-# --- Check required helpers ---
+# - - - - - - - - - - - - - - - - Required - - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def _required_base(item: str, cb: Callable[[str], bool | str | None], type: str, info: str = "", silent: bool = False):
     info = f" {info}" if info else ""
     if not cb(item):
-        log_error(f"{type.capitalize()} '{item}' is required.{info}")
+        error_exit(f"{type.capitalize()} '{item}' is required.{info}")
     if not silent:
         log_info(f"Found: {item}")
 
 
-################################################################################
 def required_command(cmd: str, info: str = "", silent: bool = False):
     _required_base(cmd, shutil.which, "Command", info, silent)
 
 
-################################################################################
 def required_file(path: str, info: str = "", silent: bool = False):
     _required_base(path, os.path.isfile, "File", info, silent)
 
 
-################################################################################
 def required_folder(path: str, info: str = "", silent: bool = False):
     _required_base(path, os.path.isdir, "Folder", info, silent)
 
 
-# --- Conversions ---
+# - - - - - - - - - - - - - - -  Conversions - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def to_int(s: str, fallback: int):
     try:
         return int(s)
@@ -249,7 +253,6 @@ def to_int(s: str, fallback: int):
         return fallback
 
 
-################################################################################
 def to_bool(v):
     if isinstance(v, str):
         return v.lower() == "true"
@@ -257,10 +260,9 @@ def to_bool(v):
         return bool(v)
 
 
-# --- ENV Utilities ---
+# - - - - - - - - - - - - - - - -  Env Utils - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def env_path_add(to_add: list[str] | str):
     if isinstance(to_add, str):
         to_add_list = [to_add]
@@ -270,10 +272,9 @@ def env_path_add(to_add: list[str] | str):
     os.environ["PATH"] = os.pathsep.join(to_add_list + prev_path)
 
 
-# --- File Utilities ---
+# - - - - - - - - - - - - - - - - File Utils - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def file_is_binary(file_path, chunk_size=1024, null_byte_threshold=0.1):
     if not os.path.exists(file_path):
         return False
@@ -289,10 +290,9 @@ def file_is_binary(file_path, chunk_size=1024, null_byte_threshold=0.1):
         return True
 
 
-# --- OS Utilities ---
+# - - - - - - - - - - - - - - - - - OS Utils - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def os_tempfile(filename: str, check: bool = True):
     try:
         filepath = Path(os.path.join(tempfile.gettempdir(), filename))
@@ -300,16 +300,14 @@ def os_tempfile(filename: str, check: bool = True):
         return str(filepath)
     except Exception as e:
         if check:
-            log_error(f"Failed to create temp file: {e}")
+            error_exit(f"Failed to create temp file: {e}")
         return ""
 
 
-################################################################################
 def os_home():
     return str(Path.home()).replace("\\", "/")
 
 
-################################################################################
 def mac_bundle(start_path: str, app_name: str, is_bundle: bool = True):
     # Mac paths
     if is_bundle:
@@ -329,7 +327,6 @@ def mac_bundle(start_path: str, app_name: str, is_bundle: bool = True):
     return MacBundle(bundle, contents, frameworks, bin)
 
 
-################################################################################
 def os_binpath(start_path: str, bin_name: str, macos_get_bundle: bool = False) -> str:
     p = platform.system().lower()
 
@@ -349,7 +346,6 @@ def os_binpath(start_path: str, bin_name: str, macos_get_bundle: bool = False) -
     return ""
 
 
-################################################################################
 def os_copy_to(src: str, dst: str, only_content: bool = True):
 
     if os.path.isdir(src):
@@ -365,14 +361,12 @@ def os_copy_to(src: str, dst: str, only_content: bool = True):
         shutil.copy(src, dst)
 
 
-################################################################################
 class GlobSort(enum.Enum):
     Nope = enum.auto()
     Alpha = enum.auto()
     VerNum = enum.auto()
 
 
-################################################################################
 def os_glob(
     pattern: str,
     sort: GlobSort = GlobSort.Alpha,
@@ -394,25 +388,42 @@ def os_glob(
 
     if not final_path:
         err_info = f" {err_info}" if err_info else ""
-        log_error(f"Glob '{pattern}' has failed.{err_info}")
+        error_exit(f"Glob '{pattern}' has failed.{err_info}")
 
     return final_path
 
 
-# --- Tools ---
+# - - - - - - - - - - - - - - -  Other Utils - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 def zip_it(dst: str, src: str):
     cmd = ["7z", "a", "-tzip", "-bso0", "-bsp0", "-bse1"]
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     run_cmd([*cmd, dst, src], verbosity=1)
 
 
-# --- AWS ---
+def emoji_str_len(text: str):
+    width = 0
+    for char in text:
+        # Get the East Asian Width property
+        eaw = unicodedata.east_asian_width(char)
+
+        # 'W' (Wide) and 'F' (Fullwidth) usually take 2 columns
+        if eaw in ("W", "F"):
+            width += 2
+        # Zero-width characters (like combining marks or ZWJ)
+        # Category 'Mn' = Mark, Nonspacing; 'Cf' = Other, Format (includes ZWJ)
+        elif unicodedata.category(char) in ("Mn", "Cf"):
+            width += 0
+        else:
+            width += 1
+
+    return width
 
 
-################################################################################
+# - - - - - - - - - - - - - - - -  AWS Utils - - - - - - - - - - - - - - - - - #
+
+
 def aws_copy_file(filepath: str, aws_filepath: str, content_type: str | None = None):
 
     cmd = ["aws", "s3", "cp", "--cache-control", "max-age:no-cache", filepath, aws_filepath]
@@ -424,7 +435,6 @@ def aws_copy_file(filepath: str, aws_filepath: str, content_type: str | None = N
     run_cmd(cmd, verbosity=0, err_info=f"Could not update {filepath} to AWS", permissive=True)
 
 
-################################################################################
 def aws_auth(pem_filepath: str, key_filepath: str, trust_arn: str, profile_arn: str, role_arn: str, info: str = ""):
 
     info = int(len(info) < 1) * " " + f" {info}"
@@ -457,17 +467,16 @@ def aws_auth(pem_filepath: str, key_filepath: str, trust_arn: str, profile_arn: 
 
     for key in ["AccessKeyId", "SecretAccessKey", "SessionToken"]:
         if not key in aws_auth:
-            log_error(f"Missing key '{key}' during AWS Auth")
+            error_exit(f"Missing key '{key}' during AWS Auth")
 
     os.environ["AWS_ACCESS_KEY_ID"] = aws_auth["AccessKeyId"]
     os.environ["AWS_SECRET_ACCESS_KEY"] = aws_auth["SecretAccessKey"]
     os.environ["AWS_SESSION_TOKEN"] = aws_auth["SessionToken"]
 
 
-# --- Qt Classes & Functions ---
+# - - - - - - - - - - - - - - - - - Qt Utils - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
 class QtInfo:
     def __init__(self):
         self.path: str = ""
@@ -504,11 +513,10 @@ class QtInfo:
             required_command(self.deployqt)
 
 
-# --- EntryPoint ---
+# - - - - - - - - - - - - - - - - Entrypoint - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
-def entrypoint(main: Callable):  # TODO add kwargs to pass to the main function
+def entrypoint(main: Callable, *args):
     import inspect
 
     callee_name = inspect.stack()[1].frame.f_globals.get("__name__", "")
@@ -517,42 +525,47 @@ def entrypoint(main: Callable):  # TODO add kwargs to pass to the main function
         return
 
     try:
-        main()
+        _init1()
+        main(*args)
     except KeyboardInterrupt:
-        log_error("User interrupts execution.")
+        error_exit("User interrupts execution.")
     except PermissionError as e:
-        log_error("Some files are in use, execution blocked", e)
+        error_exit("Some files are in use, execution blocked", e)
     except Exception as e:
-        log_error("Unexpected", e)
+        error_exit("Unexpected", e)
 
 
-# --- Setup ---
+# - - - - - - - - - - - - - - - - -  Setup - - - - - - - - - - - - - - - - - - #
 
 
-################################################################################
-def __initialize():
-    global __GLOBAL_TEE, __GLOBAL_TEE_WITH_CALLBACK
+def _init1():
+    global __GLOBAL_TEE
     if not __GLOBAL_TEE:
-        __GLOBAL_TEE = tee_new(None, 1, None)
+        __GLOBAL_TEE = tee_make(None, 1, None)
+
+
+def _init2():
+    global __GLOBAL_TEE_WITH_CALLBACK
     if not __GLOBAL_TEE_WITH_CALLBACK:
-        __GLOBAL_TEE_WITH_CALLBACK = tee_new(None, 1, TRACE_CB)
+        __GLOBAL_TEE_WITH_CALLBACK = tee_make(None, 1, TRACE_CB)
 
 
-################################################################################
 def setup(
     exit_cb: Callable | None = None,
     trace_cb: Callable | None = None,
     process_cb: Callable | None = None,
     process_th: int = 10,
     process_filepath: str | None = None,
+    show_traceback: bool = False,
 ):
 
-    global EXIT_CB, TRACE_CB, PROCESS_CB, PROCESS_TH, PROCESS_FILEPATH
+    global EXIT_CB, TRACE_CB, PROCESS_CB, PROCESS_TH, PROCESS_FILEPATH, SHOW_TRACEBACK
 
     EXIT_CB = exit_cb
     TRACE_CB = trace_cb
     PROCESS_CB = process_cb
     PROCESS_TH = process_th
     PROCESS_FILEPATH = process_filepath
+    SHOW_TRACEBACK = show_traceback
 
-    __initialize()
+    _init2()

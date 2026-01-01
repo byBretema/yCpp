@@ -3,6 +3,7 @@
 #define yyLib_Fmt
 #define yyEnable_Aliases
 #define yyEnable_Testing
+#define yyLib_Glm
 // #define yyEnable_PrintFileAndLine
 #define yyDisable_LogFileAndLine
 #include "../vendor/y.hpp"
@@ -12,16 +13,16 @@
 int main() {
 
     y::Test T {};
-    T.set_align_column(42);
+    // T.set_align_column(42);
 
 
     T.make_section("Fmt");
     {
         T.test("vec i32", [] {
-            // Vec v { 1, 2, 3, 4 };
-            // y_println("{}", v);
-            // Uset us { 1, 2, 3, 4 };
-            // y_println("{}", us);
+            Vec v { 1, 2, 3, 4 };
+            y_println("{}", v);
+            Vec3 gv3 { 1, 2, 3 };
+            y_println("{}", gv3);
             return true;
         });
     }
@@ -31,7 +32,6 @@ int main() {
     {
         i32 count = 0;
         {
-            // y::Defer D { [&] { count += 2; } };
             y_defer(count += 2);
             T.eq("Before", count, 0);
         }
