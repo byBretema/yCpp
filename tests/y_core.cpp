@@ -8,8 +8,6 @@
 #define yyDisable_LogFileAndLine
 #include "../vendor/y.hpp"
 
-#include <iostream>
-
 int main() {
 
     y::Test T {};
@@ -20,9 +18,9 @@ int main() {
     {
         T.test("vec i32", [] {
             Vec v { 1, 2, 3, 4 };
-            y_println("{}", v);
+            auto str1 = y_fmt("{}", v);
             Vec3 gv3 { 1, 2, 3 };
-            y_println("{}", gv3);
+            auto str2 = y_fmt("{}", gv3);
             return true;
         });
     }

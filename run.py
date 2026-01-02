@@ -18,8 +18,7 @@ TESTS_DIR: str = "tests"
 
 
 def title(msg):
-    y.log_info("", "")
-    y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=True, post_ln=True, sep="#")
+    y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=2, post_ln=0, sep="#")
 
 
 def main():
@@ -113,6 +112,8 @@ def main():
         tests_total: int = 0
         tests_passed: int = 0
 
+        test_fancy = lambda m, al, n: y.log_fancy(m, align=al, sep="·", margin=0, pre_ln=n)
+
         if os.path.isdir(tests_dir):
 
             for root, _, files in os.walk(tests_dir):
@@ -122,7 +123,7 @@ def main():
                     if y.file_is_binary(filepath):
                         tests_total += 1
 
-                        y.log_fancy(filename, pre_ln=True, align=y.FancyAlign.Left, sep=" ", margin=1)
+                        test_fancy(filename, y.FancyAlign.Left, 1)
 
                         p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, is_external=True)
 
@@ -135,7 +136,7 @@ def main():
 
                         mark: str = "🟢" if ok else "🔴"
                         status: str = "PASS" if ok else "FAIL"
-                        y.log_fancy(f"{status} {mark}", align=y.FancyAlign.Right, sep=" ", margin=1)
+                        test_fancy(f"{status} {mark}", y.FancyAlign.Right, 0)
 
         ok: bool = tests_passed == tests_total
 

@@ -150,6 +150,17 @@ y_info/warn...
 // - - - - - - - - - - - - - - - - QoL MACROS - - - - - - - - - - - - - - - - //
 #if 1
 
+//-- Attribs
+
+#define y_MBU [[maybe_unused]]
+#define y_NOD [[nodiscard]]
+#define y_NODx(x) [[nodiscard(x)]]
+#define y_DEP [[deprecated]]
+#define y_DEPx(x) [[deprecated(x)]]
+#define y_HAPPY [[likely]]
+#define y_SAD [[unlikely]]
+#define y_NORET [[noreturn]]
+
 //-- Flow
 
 #define y_or_return(cond, ret_val)                                                                 \
@@ -187,16 +198,16 @@ public:                                                                         
 
 //-- Concat
 
-#ifndef _y_concat
-#define _y_concat2(l, r) l##r
-#define _y_concat1(l, r) _y_concat2(l, r)
-#define _y_concat(l, r) _y_concat1(l, r)
+#ifndef __yConcat
+#define __yConcat2(l, r) l##r
+#define __yConcat1(l, r) __yConcat2(l, r)
+#define __yConcat(l, r) __yConcat1(l, r)
 #endif
 
 //-- Defer
 
-#define y_defer(x) y::Defer _y_concat(y_defer_r_, __LINE__) { [&] { x; } };
-#define y_deferc(x) y::Defer _y_concat(y_defer_c_, __LINE__) { [=] { x; } };
+#define y_defer(x) y::Defer __yConcat(y_defer_r_, __LINE__) { [&] { x; } };
+#define y_deferc(x) y::Defer __yConcat(y_defer_c_, __LINE__) { [=] { x; } };
 
 #endif
 
@@ -363,13 +374,13 @@ using namespace Alias_Stl;
 ////////////////////////////////////////////////////////////////////////////////
 namespace Alias_Glm {
 #ifdef yyLib_Glm
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 using Vec2 = glm::vec2;
 using Vec3 = glm::vec3;
 using Vec4 = glm::vec4;
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 using Mat4 = glm::mat4;
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 #endif
 } // namespace Alias_Glm
 using namespace Alias_Glm;
@@ -1026,8 +1037,8 @@ public:
         if (m_fail_count)
             y_println("❌ FAIL  |  {} / {}", m_fail_count, m_total_count);
 
-        // if (done)
-        //     y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
+        if (done)
+            y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
     }
 
     i32 cli_result() { return m_pass_count == m_total_count ? 0 : -1; }

@@ -120,8 +120,8 @@ class FancyAlign(enum.Enum):
 
 def log_fancy(
     title: str | None,
-    pre_ln: bool = False,
-    post_ln: bool = False,
+    pre_ln: int = 0,
+    post_ln: int = 0,
     align: FancyAlign = FancyAlign.Center,
     sep: str = "-",
     margin: int = 3,
@@ -149,13 +149,13 @@ def log_fancy(
         sep_l = deco
         sep_r = sep * (n_sep - emoji_str_len(deco))
 
-    if pre_ln:
-        print(f"{'\n'*pre_ln}", end=None)
+    if pre_ln > 0:
+        print(f"{'\n'*pre_ln}", end="")
 
     print(template.format(sl=sep_l, t=title, sr=sep_r))
 
-    if post_ln:
-        print(f"{'\n'*post_ln}", end=None)
+    if post_ln > 0:
+        print(f"{'\n'*post_ln}", end="")
 
 
 # - - - - - - - - - - - - - - -  Run Command - - - - - - - - - - - - - - - - - #
