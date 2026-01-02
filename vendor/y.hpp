@@ -1037,8 +1037,8 @@ public:
         if (m_fail_count)
             y_println("❌ FAIL  |  {} / {}", m_fail_count, m_total_count);
 
-        if (done)
-            y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
+        // if (done)
+        //     y_println("🏁 DONE  |  {} / {}", m_pass_count, m_total_count);
     }
 
     i32 cli_result() { return m_pass_count == m_total_count ? 0 : -1; }

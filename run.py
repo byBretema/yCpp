@@ -17,8 +17,10 @@ TESTS_DIR: str = "tests"
 # - - - - - - - - - - - - - - - - - Main - - - - - - - - - - - - - - - - - - - #
 
 
-def title(msg):
-    y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=2, post_ln=0, sep="#")
+def title(msg, post_ln=1):
+    nl = "\n" * post_ln if post_ln > 0 else ""
+    y.println_fill("\n\n· {s} {t} {s} ·" f"{nl}", "-", t=msg)
+    # y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=2, post_ln=post_ln, sep="#")
 
 
 def main():
@@ -106,13 +108,11 @@ def main():
 
     if args.tests:
 
-        title("TESTs")
+        title("TESTs", 0)
         tests_dir: str = os.path.abspath(f"{BUILD_DIR}/tests")
 
         tests_total: int = 0
         tests_passed: int = 0
-
-        test_fancy = lambda m, al, n: y.log_fancy(m, align=al, sep="·", margin=0, pre_ln=n)
 
         if os.path.isdir(tests_dir):
 
@@ -123,12 +123,15 @@ def main():
                     if y.file_is_binary(filepath):
                         tests_total += 1
 
-                        test_fancy(filename, y.FancyAlign.Left, 1)
-
-                        p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, is_external=True)
+                        p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, external=True)
 
                         if p.stdout:
-                            y.log_info(f"\n{p.stdout}", "")
+                            y.println_fill("\n· >> {m1} {s} ·", "·", m1=filename)
+                        else:
+                            y.println()
+
+                        if p.stdout:
+                            y.println(f"\n{p.stdout}")
 
                         ok: bool = not p.returncode
 
@@ -136,13 +139,14 @@ def main():
 
                         mark: str = "🟢" if ok else "🔴"
                         status: str = "PASS" if ok else "FAIL"
-                        test_fancy(f"{status} {mark}", y.FancyAlign.Right, 0)
+
+                        y.println_fill("· >> {m1} {s} {m2} ··· ·", "·", m1=filename, m2=f"{status} {mark}")
 
         ok: bool = tests_passed == tests_total
 
         mark: str = "✅️" if ok else "⛔️"
         status: str = "PASS" if ok else "FAIL"
-        y.log_info("", "")
+        y.println()
         y.log_info(f"Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
 
 

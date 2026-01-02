@@ -22,6 +22,7 @@ PROCESS_CB: Callable | None = None
 PROCESS_TH: int = 10
 PROCESS_FILEPATH: str | None = None
 SHOW_TRACEBACK: bool = False
+MAX_WIDTH: int = 80
 
 
 # - - - - - - - - - - - - - - - - - Logger - - - - - - - - - - - - - - - - - - #
@@ -108,8 +109,36 @@ def log_error(msg: str, exception=None):
     _log_error(msg, exception, abort=False)
 
 
-def log_info(msg: str, prefix="-- "):
+def log_info(msg: str, prefix="· "):
     tee(f"{prefix}{msg}\n")
+
+
+def println(msg: str = ""):
+    log_info(msg, "")
+
+
+def fill_str(ref: str, sep: str, **kwargs):
+    kwargs["s"] = ""
+    intermediate_str = ref.format(**kwargs)
+
+    sep_count = ref.count("{s}")
+    sep_chars_count = max(MAX_WIDTH - emoji_str_len(intermediate_str, True), 0)
+    n_sep = (sep_chars_count // sep_count) + (sep_chars_count % sep_count)
+    kwargs["s"] = sep * n_sep
+
+    final_str = ref.format(**kwargs)
+
+    tries = 0
+    while emoji_str_len(final_str, True) > MAX_WIDTH and tries < 10:
+        head, _, tail = final_str.rpartition(sep)
+        final_str = head + tail
+        tries += 1
+
+    return final_str
+
+
+def println_fill(ref: str, sep: str, **kwargs):
+    println(fill_str(ref, sep, **kwargs))
 
 
 class FancyAlign(enum.Enum):
@@ -131,10 +160,9 @@ def log_fancy(
     title = f" {title} " if title else ""
 
     deco = sep * margin
-    column_max = 80
 
     template_with_title = template.format(sl="", t=title, sr="")
-    n_sep = max(column_max - emoji_str_len(template_with_title), 0)
+    n_sep = max(MAX_WIDTH - emoji_str_len(template_with_title), 0)
 
     sep_l = ""
     sep_r = ""
@@ -174,7 +202,7 @@ def run_cmd(
     err_info: str = "",
     verbosity: int = 2,
     permissive: bool = False,
-    is_external: bool = False,
+    external: bool = False,
 ) -> RunCmdInfo:
 
     cmd_str: str = " ".join(cmd)
@@ -182,7 +210,7 @@ def run_cmd(
     if verbosity > 0:
         log_info(cmd_str, prefix="@ ")
 
-    if is_external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
+    if external:  # TODO : Add a windows solution, 'stdbuf' is Linux only
         cmd = ["stdbuf", "-oL"] + cmd
 
     process = subprocess.Popen(
@@ -402,18 +430,19 @@ def zip_it(dst: str, src: str):
     run_cmd([*cmd, dst, src], verbosity=1)
 
 
-def emoji_str_len(text: str):
+def emoji_str_len(text: str, ignore_newline=False):
     width = 0
     for char in text:
         # Get the East Asian Width property
         eaw = unicodedata.east_asian_width(char)
+        is_newline_char = ignore_newline and char == "\n"
 
         # 'W' (Wide) and 'F' (Fullwidth) usually take 2 columns
         if eaw in ("W", "F"):
             width += 2
         # Zero-width characters (like combining marks or ZWJ)
         # Category 'Mn' = Mark, Nonspacing; 'Cf' = Other, Format (includes ZWJ)
-        elif unicodedata.category(char) in ("Mn", "Cf"):
+        elif unicodedata.category(char) in ("Mn", "Cf") or is_newline_char:
             width += 0
         else:
             width += 1
@@ -557,15 +586,24 @@ def setup(
     process_th: int = 10,
     process_filepath: str | None = None,
     show_traceback: bool = False,
+    max_width: int = 80,
 ):
 
-    global EXIT_CB, TRACE_CB, PROCESS_CB, PROCESS_TH, PROCESS_FILEPATH, SHOW_TRACEBACK
-
+    global EXIT_CB
     EXIT_CB = exit_cb
+
+    global TRACE_CB
     TRACE_CB = trace_cb
+
+    global PROCESS_CB, PROCESS_TH, PROCESS_FILEPATH
     PROCESS_CB = process_cb
     PROCESS_TH = process_th
     PROCESS_FILEPATH = process_filepath
+
+    global SHOW_TRACEBACK
     SHOW_TRACEBACK = show_traceback
+
+    global MAX_WIDTH
+    MAX_WIDTH = max_width
 
     _init2()
