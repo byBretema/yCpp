@@ -5,5 +5,6 @@
 
 int main() {
     auto const s = y::str_join({ "a", "b", "c" }, ",");
-    y_MBU auto fmt_str = y_fmt("{}", s);
+    [[maybe_unused]] auto fmt_str = y_fmt("{}", s);
+    // y_print("AAAAA: {}\n", 3);
 }

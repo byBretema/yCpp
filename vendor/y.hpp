@@ -150,25 +150,14 @@ y_info/warn...
 // - - - - - - - - - - - - - - - - QoL MACROS - - - - - - - - - - - - - - - - //
 #if 1
 
-//-- Attribs
-
-#define y_MBU [[maybe_unused]]
-#define y_NOD [[nodiscard]]
-#define y_NODx(x) [[nodiscard(x)]]
-#define y_DEP [[deprecated]]
-#define y_DEPx(x) [[deprecated(x)]]
-#define y_HAPPY [[likely]]
-#define y_SAD [[unlikely]]
-#define y_NORET [[noreturn]]
-
-//-- Flow
+// Flow
 
 #define y_or_return(cond, ret_val)                                                                 \
     if (!(cond)) {                                                                                 \
         return ret_val;                                                                            \
     }
 
-//-- Class helpers
+// Class helpers
 
 #define y_class_nocopy(T)                                                                          \
 public:                                                                                            \
@@ -196,7 +185,7 @@ public:                                                                         
         (move_code);                                                                               \
     }
 
-//-- Concat
+// Concat
 
 #ifndef __yConcat
 #define __yConcat2(l, r) l##r
@@ -204,7 +193,7 @@ public:                                                                         
 #define __yConcat(l, r) __yConcat1(l, r)
 #endif
 
-//-- Defer
+// Defer
 
 #define y_defer(x) y::Defer __yConcat(y_defer_r_, __LINE__) { [&] { x; } };
 #define y_deferc(x) y::Defer __yConcat(y_defer_c_, __LINE__) { [=] { x; } };
@@ -430,6 +419,7 @@ concept T_MathVec = T_OneOf<T, Vec2, Vec3, Vec4>;
 // - - - - - - - - - - - - - - - PRINT HELPERs  - - - - - - - - - - - - - - - //
 #if 1
 
+// Containers formatter
 template <y::T_Container T>
 struct std::formatter<T> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
@@ -453,6 +443,7 @@ struct std::formatter<T> {
 
 #ifdef yyLib_Glm
 
+// Math Vectors formatter
 template <y::T_MathVec T>
 struct std::formatter<T> {
     constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
@@ -487,6 +478,7 @@ static const int __yWinCoutSetup = []() {
 }();
 #endif
 
+
 #include <format>
 #define y_fmt std::format
 #define __yPrinter(...) printf("%s", y_fmt(__VA_ARGS__).c_str())
@@ -507,6 +499,7 @@ static const int __yWinCoutSetup = []() {
 #define y_warn(...) __yPrinter("{}{}\n", __yLogInfo("WARN"), y_fmt(__VA_ARGS__))
 #define y_err(...) __yPrinter("{}{}\n", __yLogInfo("ERRO"), y_fmt(__VA_ARGS__))
 #define y_debug(...) __yPrinter("{}{}\n", __yLogInfo("DEBG"), y_fmt(__VA_ARGS__))
+
 #define y_println(...) __yPrinter("{}{}\n", __yPrintInfo(), y_fmt(__VA_ARGS__))
 #define y_print(...) __yPrinter("{}{}", __yPrintInfo(), y_fmt(__VA_ARGS__))
 

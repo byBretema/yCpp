@@ -126,18 +126,19 @@ def main():
                     tests_total += 1
                     p: y.RunCmdInfo = y.run_cmd(
                         [filepath],
-                        verbosity=2,
+                        verbosity=0,
                         permissive=True,
                         external=True,
                     )
 
                     if p.stdout:
-                        y.println_fill("· >> {m1} {s} ·", "·", m1=filename)
+                        y.println_fill("··· {m1} {s}", "·", m1=filename)
+                        y.println()
                         y.println(p.stdout)
 
                     ok: bool = not p.returncode
                     status: str = "PASS 🟢" if ok else "FAIL 🔴"
-                    y.println_fill("@ {m1} {s}{m2} ·", "· ", m1=filename, m2=f"{status}")
+                    y.println_fill("··· {m1} {s} {m2}", "·", m1=filename, m2=f"{status}")
 
                     tests_passed += int(ok)
 
