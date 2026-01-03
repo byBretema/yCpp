@@ -34,7 +34,6 @@
 
 include(FetchContent)
 
-
 ################################################################################
 ##                                   Vars                                     ##
 ################################################################################
@@ -240,9 +239,7 @@ endfunction()
 ##                         Projects in curr path                              ##
 ################################################################################
 
-function(y_auto_projects)
-
-    set(_ignore_list ${ARGN})
+function(y_detect_projects)
 
     set(_found_dirs "")
     set(_root_dir ${CMAKE_CURRENT_SOURCE_DIR})
@@ -250,9 +247,10 @@ function(y_auto_projects)
     # Get everything
     file(GLOB _root_content LIST_DIRECTORIES TRUE RELATIVE "${_root_dir}" "${_root_dir}/*")
 
+
     # Filter valid folders
     foreach(_item ${_root_content})
-        list(FIND _ignore_list "${_item}" _ignored)
+        list(FIND "${Y_NOT_A_PROJECT}" "${_item}" _ignored)
 
         set(_item_dir "${_root_dir}/${_item}")
 

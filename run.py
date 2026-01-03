@@ -17,10 +17,9 @@ TESTS_DIR: str = "tests"
 # - - - - - - - - - - - - - - - - - Main - - - - - - - - - - - - - - - - - - - #
 
 
-def title(msg, post_ln=1):
-    nl = "\n" * post_ln if post_ln > 0 else ""
-    y.println_fill("\n\n· {s} {t} {s} ·" f"{nl}", "-", t=msg)
-    # y.log_fancy(msg, align=y.FancyAlign.Center, pre_ln=2, post_ln=post_ln, sep="#")
+def title_print(msg, ln=True):
+    newline = "\n" * ln if ln > 0 else ""
+    y.println_fill("\n\n{s}  {t}  {s}" f"{newline}", "░", t=msg)
 
 
 def main():
@@ -76,7 +75,7 @@ def main():
 
     if args.build:
 
-        title("CONFIG")
+        title_print("⚙️ : CONFIG")
 
         config_cmd: list[str] = [
             "cmake",
@@ -88,7 +87,7 @@ def main():
         ]
         y.run_cmd(config_cmd, cwd=sub_build_dir)
 
-        title("BUILD")
+        title_print("🔨 : BUILD")
 
         build_cmd: list[str] = [
             "cmake",
@@ -107,10 +106,9 @@ def main():
     ############################################################################
 
     if args.tests:
+        title_print("🧪 : TESTs", ln=False)
 
-        title("TESTs", 0)
         tests_dir: str = os.path.abspath(f"{BUILD_DIR}/tests")
-
         tests_total: int = 0
         tests_passed: int = 0
 
@@ -120,34 +118,33 @@ def main():
                 for filename in files:
                     filepath: str = os.path.join(root, filename)
 
-                    if y.file_is_binary(filepath):
-                        tests_total += 1
+                    if not y.file_is_binary(filepath):
+                        continue
 
-                        p: y.RunCmdInfo = y.run_cmd([filepath], permissive=True, verbosity=0, external=True)
+                    y.println()
 
-                        if p.stdout:
-                            y.println_fill("\n· >> {m1} {s} ·", "·", m1=filename)
-                        else:
-                            y.println()
+                    tests_total += 1
+                    p: y.RunCmdInfo = y.run_cmd(
+                        [filepath],
+                        verbosity=2,
+                        permissive=True,
+                        external=True,
+                    )
 
-                        if p.stdout:
-                            y.println(f"\n{p.stdout}")
+                    if p.stdout:
+                        y.println_fill("· >> {m1} {s} ·", "·", m1=filename)
+                        y.println(p.stdout)
 
-                        ok: bool = not p.returncode
+                    ok: bool = not p.returncode
+                    status: str = "PASS 🟢" if ok else "FAIL 🔴"
+                    y.println_fill("@ {m1} {s}{m2} ·", "· ", m1=filename, m2=f"{status}")
 
-                        tests_passed += int(ok)
+                    tests_passed += int(ok)
 
-                        mark: str = "🟢" if ok else "🔴"
-                        status: str = "PASS" if ok else "FAIL"
+        status: str = "PASS ✅️" if (tests_passed == tests_total) else "FAIL ⛔️"
 
-                        y.println_fill("· >> {m1} {s} {m2} ··· ·", "·", m1=filename, m2=f"{status} {mark}")
-
-        ok: bool = tests_passed == tests_total
-
-        mark: str = "✅️" if ok else "⛔️"
-        status: str = "PASS" if ok else "FAIL"
         y.println()
-        y.log_info(f"Passed Tests ({tests_passed}/{tests_total}) ❱ {status} {mark}")
+        y.log_info(f"Passed tests ({tests_passed}/{tests_total}) ❱ {status}")
 
 
 # - - - - - - - - - - - - - - - Entrypoint - - - - - - - - - - - - - - - - - - #

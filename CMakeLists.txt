@@ -10,9 +10,10 @@ y_set_defaults(20)
 
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-# y_add_external("fmt"    "12.1.0" "https://github.com/fmtlib/fmt/releases/download/12.1.0/fmt-12.1.0.zip")
 y_add_external("glm"      "1.0.1"  "https://github.com/g-truc/glm/archive/refs/tags/1.0.1.zip"            )
 y_add_external("argparse" "3.2"    "https://github.com/p-ranav/argparse/archive/refs/tags/v3.2.zip"       )
 
-y_auto_projects(build tests vendor)
+list(APPEND Y_NOT_A_PROJECT build tests vendor)
+
+y_detect_projects()
 y_enable_tests()

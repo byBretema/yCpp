@@ -123,7 +123,7 @@ def fill_str(ref: str, sep: str, **kwargs):
 
     sep_count = ref.count("{s}")
     sep_chars_count = max(MAX_WIDTH - emoji_str_len(intermediate_str, True), 0)
-    n_sep = (sep_chars_count // sep_count) + (sep_chars_count % sep_count)
+    n_sep = (sep_chars_count // sep_count // emoji_str_len(sep)) + (sep_chars_count % sep_count)
     kwargs["s"] = sep * n_sep
 
     final_str = ref.format(**kwargs)
