@@ -45,7 +45,7 @@ def main():
     ############################################################################
 
     build_type: str = "Release" if args.release else "Debug"
-    sub_build_dir: str = f"{BUILD_DIR}/project"
+    sub_build_dir: str = f"{BUILD_DIR}/sub-build"
     cmake_gen: str = args.cmakegen
 
     ############################################################################
