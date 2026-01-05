@@ -6,7 +6,7 @@
 #define yyLib_Glm
 // #define yyEnable_PrintFileAndLine
 #define yyDisable_LogFileAndLine
-#include "../vendor/y.hpp"
+#include <y.hpp>
 
 int main() {
 

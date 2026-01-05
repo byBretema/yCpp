@@ -869,8 +869,7 @@ using ETimer = ElapsedTimer;
     y_defer(file.close());
 
     if (!file.is_open()) {
-        // y_warn("[file_read] Opening file: {}. Returned empty str.",
-        // input_file);
+        y_warn("[file_read] Opening file: {}. Returned empty str.", input_file);
         return "";
     }
 
@@ -886,16 +885,18 @@ b8 file_write(Str const &output_file, char const *data, usize data_size,
               std::ios_base::openmode mode) {
 
     if (!data || data_size < 1) {
-        return false;
         y_err("[file_write] Invalid data: {}", output_file);
+        return false;
     }
+
+    fs::create_directory(fs::path(output_file).parent_path());
 
     std::ofstream file(output_file, std::ios::out | std::ios::binary | mode);
     y_defer(file.close());
 
     if (!file.is_open()) {
-        return false;
         y_err("[file_write] Opening file: {}", output_file);
+        return false;
     }
 
     file.write(data, data_size);
@@ -912,7 +913,6 @@ template <T_CharList T>
 inline b8 file_overwrite(Str const &output_file, T const &v) {
     return file_write(output_file, (char const *)(v.data()), v.size(), std::ios::trunc);
 }
-
 
 inline b8 file_check_extension(Str const &input_file, Str ext_ref) {
     auto const ext = input_file.substr(input_file.find_last_of('.') + 1);
