@@ -4,9 +4,11 @@
 
 ## 🔋 Project
 
-- [y.hpp](docs/y_cpp.md) - A set of utilities making C++ more comfy.
-- [y.cmake]() - A CMake wrapper to simplify external deps.
-- [y.py]() - A set of utilities for python.
+- 🔵 **_[y.hpp](docs/y_cpp.md)_** - A set of utilities making C++ more comfy
+
+- 🐍 **_y.py_** - A common set of utilities for python
+
+- 📦️ **_y.cmake_** - Simplify external deps
 
 ## 📚️ Usage
 
@@ -22,27 +24,26 @@
 ### 🌳 Example source tree
 
 ```
-
 .
 ├── project-1/
-│ ├── whatever/
-│ ├── you/
-│ ├── need/
-│ ├── CMakeLists.txt
-│ └── main.cpp (if executable)
+│   ├── whatever/
+│   ├── you/
+│   ├── need/
+│   ├── CMakeLists.txt
+│   └── main.cpp (if executable)
 ├── project-2/
-│ ├── ...
-│ ├── CMakeLists.txt
-│ └── main.cpp (if executable)
+│   ├── ...
+│   ├── CMakeLists.txt
+│   └── main.cpp (if executable)
 ├── tests/
-│ ├── test.cpp
-│ ├── your.cpp
-│ └── code.cpp
+│   ├── test.cpp
+│   ├── your.cpp
+│   └── code.cpp
 ├── vendor/
-│ ├── y.cmake
-│ ├── y.cpp
-│ ├── y.py
-│ └── ... other external code
+│   ├── y.cmake
+│   ├── y.cpp
+│   ├── y.py
+│   └── ... other external code
 ├── .clang-format (please)
 ├── CMakeLists.txt
 └── run
@@ -51,33 +52,29 @@
 
 ### 🌳 Example build tree
 
-     ```
-     build/
-     ├── bin/
-     │   └── project-x/
-     │       └── project-x
-     ├── deps/
-     │   ├── argparse-*/
-     │   │   └── ...
-     │   └── glm-*/
-     │       └── ...
-     ├── sub-build/
-     │   ├── CMakeFiles/
-     │   │   └── ...
-     │   ├── project-x/
-     │   │   └── ...
-     │   ├── .ninja_deps
-     │   ├── .ninja_log
-     │   ├── CMakeCache.txt
-     │   ├── CPackConfig.cmake
-     │   ├── CPackSourceConfig.cmake
-     │   ├── build.ninja
-     │   └── cmake_install.cmake
-     └── tests/
-         ├── y_core
-         └── y_libs
-     ```
-
 ```
-
+build/
+├── bin/
+│   └── project-x/
+│       └── project-x
+├── deps/
+│   ├── argparse-*/
+│   │   └── ...
+│   └── glm-*/
+│       └── ...
+├── sub-build/
+│   ├── CMakeFiles/
+│   │   └── ...
+│   ├── project-x/
+│   │   └── ...
+│   ├── .ninja_deps
+│   ├── .ninja_log
+│   ├── CMakeCache.txt
+│   ├── CPackConfig.cmake
+│   ├── CPackSourceConfig.cmake
+│   ├── build.ninja
+│   └── cmake_install.cmake
+└── tests/
+    ├── y_core
+    └── y_libs
 ```
