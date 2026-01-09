@@ -40,29 +40,29 @@ Define these macros **before** including the header to enable/disable features.
 ### Logging
 
 ```cpp
-y_print(...)  // Standard print
-y_println(...) // Print with newline
-y_info(...)   // Log [INFO]
-y_warn(...)   // Log [WARN]
-y_err(...)    // Log [ERRO]
-y_debug(...)  // Log [DEBG]
+y_print(...);  // Standard print
+y_println(...); // Print with newline
+y_info(...);   // Log [INFO]
+y_warn(...);   // Log [WARN]
+y_err(...);    // Log [ERRO]
+y_debug(...);  // Log [DEBG]
 ```
 
 ### Flow Control & Classes
 
 ```cpp
 // Tries to mimic `or_return` idiom of Odin
-y_or_return(cond, ret_val)
+y_or_return(cond, ret_val);
 
 // Defers execution of code block until scope exit
-y_defer(code)   // Internal lambda captures by ref
-y_deferc(code)  // Internal lambda captures by copy
+y_defer(code);   // Internal lambda captures by ref
+y_deferc(code);  // Internal lambda captures by copy
 
 // Class helpers to delete constructors
-y_class_nocopy(ClassType)
-y_class_nomove(ClassType)
-y_class_nocopynomove(ClassType)
-y_class_move(ClassType, move_code)  // 'move_code' will be place inside noexcept swap.
+y_class_nocopy(ClassType);
+y_class_nomove(ClassType);
+y_class_nocopynomove(ClassType);
+y_class_move(ClassType, move_code);  // 'move_code' will be place inside noexcept swap.
 ```
 
 <br>
@@ -195,7 +195,7 @@ A lazy garbage collector that accumulates callbacks and executes them on destruc
 - **ElapsedTimer**
 
   ```cpp
-  class ElapsedTimer
+  class ElapsedTimer;
     // ...
     ElapsedTimer &reset()
     f64 elapsed_s()   //<! Return elapsed as seconds
