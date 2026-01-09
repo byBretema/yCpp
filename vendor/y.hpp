@@ -118,7 +118,10 @@ y_info/warn...
 // #include <fmt/format.h>
 // #include <fmt/ranges.h>
 // #include <fmt/std.h>
+// #else
+// #include <format>
 // #endif
+#include <format>
 
 // glm
 #ifdef yyLib_Glm
@@ -147,14 +150,14 @@ y_info/warn...
 #endif
 
 
-// - - - - - - - - - - - - - - - - QoL MACROS - - - - - - - - - - - - - - - - //
+// - - - - - - - - - - - - - - - QoL MACROS - - - - - - - - - - - - - - - - - //
 #if 1
 
 // Flow
 
 #define y_or_return(cond, ret_val)                                                                 \
     if (!(cond)) {                                                                                 \
-        return ret_val;                                                                            \
+        return (ret_val);                                                                          \
     }
 
 // Class helpers
@@ -200,12 +203,12 @@ public:                                                                         
 
 #endif
 
+// - - - - - - - - - - - - - - - - ALIASES  - - - - - - - - - - - - - - - - - //
 
-// - - - - - - - - - - - - - - - -  ALIASES - - - - - - - - - - - - - - - - - //
 namespace y {
 
 ////////////////////////////////////////////////////////////////////////////////
-//                               OTHERS                                       //
+//                                 OTHERS                                     //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
 
@@ -214,7 +217,7 @@ namespace fs = std::filesystem;
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-//                               NUMBERs                                      //
+//                                NUMBERs                                     //
 ////////////////////////////////////////////////////////////////////////////////
 namespace Alias_Num {
 
@@ -282,7 +285,7 @@ using fll = double long;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                 STL                                        //
+//                                  STL                                       //
 ////////////////////////////////////////////////////////////////////////////////
 namespace Alias_Stl {
 
@@ -359,7 +362,7 @@ using namespace Alias_Stl;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                 GLM                                        //
+//                                  GLM                                       //
 ////////////////////////////////////////////////////////////////////////////////
 namespace Alias_Glm {
 #ifdef yyLib_Glm
@@ -385,7 +388,7 @@ template <typename T, typename... Allowed>
 concept T_OneOf = (std::same_as<T, Allowed> || ...);
 
 template <typename T>
-concept T_Container = std::ranges::range<T> && !std::convertible_to<T, std::string_view>;
+concept T_Container = std::ranges::range<T> && !std::convertible_to<T, y::StrView>;
 
 template <typename T>
 concept T_Integer = std::integral<T>;
@@ -402,9 +405,6 @@ concept T_CharList = std::same_as<T, Vec<u8>> || requires(T const &t) {
     { t.size() } -> std::integral;
 };
 
-template <typename T>
-concept T_Streamable = requires(std::ostream &os, T const &value) { os << value; };
-
 
 #ifdef yyLib_Glm
 
@@ -416,7 +416,7 @@ concept T_MathVec = T_OneOf<T, Vec2, Vec3, Vec4>;
 } // namespace y
 
 
-// - - - - - - - - - - - - - - - PRINT HELPERs  - - - - - - - - - - - - - - - //
+// - - - - - - - - - - - - - - - - FORMATTERs - - - - - - - - - - - - - - - - //
 #if 1
 
 // Containers formatter
@@ -467,7 +467,7 @@ struct std::formatter<T> {
 #endif
 
 
-// - - - - - - - - - - - - - - - FORMAT / PRINT - - - - - - - - - - - - - - - //
+// - - - - - - - - - - - - - -  FORMAT / PRINT  - - - - - - - - - - - - - - - //
 #ifndef yyDisable_Log
 
 #ifdef _WIN32
@@ -478,8 +478,6 @@ static const int __yWinCoutSetup = []() {
 }();
 #endif
 
-
-#include <format>
 #define y_fmt std::format
 #define __yPrinter(...) printf("%s", y_fmt(__VA_ARGS__).c_str())
 
@@ -553,9 +551,11 @@ private:
 
 
 struct LazyGC final {
-    ~LazyGC() { release(); }
+
     y_class_nocopy(LazyGC);
     y_class_move(LazyGC, { lhs.m_callbacks = rhs.m_callbacks; });
+
+    ~LazyGC() { release(); }
 
     LazyGC &add(VoidFn &&cb) {
         assert(cb);
@@ -584,7 +584,7 @@ private:
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                  OTHERs                                    //
+//                                 OTHERs                                     //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
 
@@ -633,7 +633,7 @@ using CLI = argparse::ArgumentParser;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                   TIME                                     //
+//                                  TIME                                      //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
 
@@ -685,7 +685,7 @@ private:
     b8 m_valid = false;
 };
 
-
+/// Returns current time formatted as `DD-MM-YYYY HH-MM-SS`
 Str inline time_stamp() {
     auto const t = Clock::to_time_t(Clock::now());
     std::ostringstream oss;
@@ -699,7 +699,7 @@ using ETimer = ElapsedTimer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                  STRINGS                                   //
+//                                 STRINGS                                    //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
 
@@ -830,35 +830,6 @@ using ETimer = ElapsedTimer;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                   BINARY                                   //
-////////////////////////////////////////////////////////////////////////////////
-#if 1
-
-
-[[nodiscard]] inline Vec<u8> bin_read(Str const &path) {
-    std::ifstream file { path, std::ios::binary };
-    using FileIt = std::istreambuf_iterator<char>;
-    return { FileIt(file), FileIt() }; // Start, End
-}
-
-[[nodiscard]] b8 bin_check_magic(SpanConst<u8> bin, SpanConst<u8> magic) {
-    // Validation
-    if (magic.empty() || bin.size() < magic.size()) {
-        return false;
-    }
-    // Iteration
-    b8 match = true;
-    for (usize i = 0; i < magic.size(); ++i) {
-        match &= (bin[i] == magic[i]);
-    }
-    // Result
-    return match;
-}
-
-#endif
-
-
-////////////////////////////////////////////////////////////////////////////////
 //                                   FILEs                                    //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
@@ -923,7 +894,36 @@ inline b8 file_check_extension(Str const &input_file, Str ext_ref) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                   MATHs                                    //
+//                                  BINARY                                    //
+////////////////////////////////////////////////////////////////////////////////
+#if 1
+
+
+[[nodiscard]] inline Vec<u8> bin_read(Str const &path) {
+    std::ifstream file { path, std::ios::binary };
+    using FileIt = std::istreambuf_iterator<char>;
+    return { FileIt(file), FileIt() }; // Start, End
+}
+
+[[nodiscard]] b8 bin_check_magic(SpanConst<u8> bin, SpanConst<u8> magic) {
+    // Validation
+    if (magic.empty() || bin.size() < magic.size()) {
+        return false;
+    }
+    // Iteration
+    b8 match = true;
+    for (usize i = 0; i < magic.size(); ++i) {
+        match &= (bin[i] == magic[i]);
+    }
+    // Result
+    return match;
+}
+
+#endif
+
+
+////////////////////////////////////////////////////////////////////////////////
+//                                  MATHs                                     //
 ////////////////////////////////////////////////////////////////////////////////
 #if 1
 
@@ -982,7 +982,7 @@ template <typename T>
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                   TESTs                                    //
+//                                  TESTs                                     //
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef yyEnable_Testing
 
@@ -1077,7 +1077,7 @@ private:
 
 
 ////////////////////////////////////////////////////////////////////////////////
-//                                  BENCHMARKS                                //
+//                                BENCHMARKS                                  //
 ////////////////////////////////////////////////////////////////////////////////
 #ifdef yyEnable_Benchmarking
 
@@ -1119,9 +1119,11 @@ private:
 } // namespace y
 
 
-// - - - - - - - - - - - - - - - -  ALIASES - - - - - - - - - - - - - - - - - //
+// - - - - - - - - - - - - - - - - ALIASES  - - - - - - - - - - - - - - - - - //
 #ifdef yyEnable_Aliases
+
 using namespace y::Alias_Num;
 using namespace y::Alias_Glm;
 using namespace y::Alias_Stl;
+
 #endif
